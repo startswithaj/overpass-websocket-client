@@ -1,0 +1,8 @@
+.gitattributes
+.gitignore
+.travis.*
+/build/
+/examples/
+/Gruntfile.*
+/spec/
+/src/

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #container {
+            margin: 10px;
+            padding: 10px;
+            outline: 1px solid black;
+        }
+
+        #output {
+            height: 450px;
+            margin: 5px;
+            padding: 0;
+            font-family: monospace;
+            overflow-y: scroll;
+        }
+
+        #input {
+            width: 100%;
+            border: 1px solid #808080;
+            font-family: monospace;
+        }
+        </style>
+    </head>
+    <body>
+        <div id="container">
+            <div id="output"></div>
+
+            <form id="inputForm">
+                <input id="input" type="text" />
+            </form>
+        </div>
+
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+        <script src="build/demo.min.js"></script>
+    </body>
+</html>
