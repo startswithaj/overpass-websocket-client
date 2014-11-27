@@ -1,14 +1,14 @@
-# Overpass Websocket Bridge
+# Overpass WebSocket Client
 
-[![Build Status]](https://travis-ci.org/IcecaveStudios/overpass-bridge)
-[![Test Coverage]](https://coveralls.io/r/IcecaveStudios/overpass-bridge?branch=develop)
+[![Build Status]](https://travis-ci.org/IcecaveStudios/overpass-websocket-client)
+[![Test Coverage]](https://coveralls.io/r/IcecaveStudios/overpass-websocket-client?branch=develop)
 [![SemVer]](http://semver.org)
 
-**Overpass** is a basic pub/sub and RPC system. This package provides a Websocket server that acts as a bridge to the
-Overpass RPC and Pub/Sub systems.
+**Overpass** is a basic pub/sub and RPC system. This package provides a WebSocket based client that can be used with the
+[Overpass WebSocket Server](https://github.com/IcecaveStudios/overpass-websocket-server).
 
-* Install via [NPM](http://npmjs.org) package [overpass-bridge](https://www.npmjs.org/package/overpass-bridge)
-* Read the [API documentation](http://icecavestudios.github.io/overpass-bridge/artifacts/documentation/api/)
+* Install via [NPM](http://npmjs.org) package [overpass-websocket-client](https://www.npmjs.org/package/overpass-websocket-client)
+* Read the [API documentation](http://icecavestudios.github.io/overpass-websocket-client/artifacts/documentation/api/)
 
 ## Contact us
 
@@ -17,6 +17,6 @@ Overpass RPC and Pub/Sub systems.
 * Join `#icecave` on [irc.freenode.net](http://webchat.freenode.net?channels=icecave)
 
 <!-- references -->
-[Build Status]: http://img.shields.io/travis/IcecaveStudios/overpass-bridge/develop.svg?style=flat-square
-[Test Coverage]: http://img.shields.io/coveralls/IcecaveStudios/overpass-bridge/develop.svg?style=flat-square
-[SemVer]: http://img.shields.io/:semver-0.1.0-yellow.svg?style=flat-square
+[Build Status]: http://img.shields.io/travis/IcecaveStudios/overpass-websocket-client/develop.svg?style=flat-square
+[Test Coverage]: http://img.shields.io/coveralls/IcecaveStudios/overpass-websocket-client/develop.svg?style=flat-square
+[SemVer]: http://img.shields.io/:semver-0.0.0-red.svg?style=flat-square

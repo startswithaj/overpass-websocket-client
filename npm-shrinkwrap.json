@@ -1,0 +1,40 @@
+{
+  "name": "overpass-websocket-client",
+  "version": "0.0.0",
+  "dependencies": {
+    "JSONStream": {
+      "version": "0.9.0",
+      "from": "JSONStream@0.9.0",
+      "resolved": "https://registry.npmjs.org/JSONStream/-/JSONStream-0.9.0.tgz",
+      "dependencies": {
+        "jsonparse": {
+          "version": "0.0.5",
+          "from": "jsonparse@0.0.5",
+          "resolved": "https://registry.npmjs.org/jsonparse/-/jsonparse-0.0.5.tgz"
+        },
+        "through": {
+          "version": "2.3.6",
+          "from": "through@>=2.2.7 <3.0.0",
+          "resolved": "https://registry.npmjs.org/through/-/through-2.3.6.tgz"
+        }
+      }
+    },
+    "node-event-emitter": {
+      "version": "0.0.1",
+      "from": "node-event-emitter@*",
+      "resolved": "https://registry.npmjs.org/node-event-emitter/-/node-event-emitter-0.0.1.tgz"
+    },
+    "promise": {
+      "version": "6.0.1",
+      "from": "promise@*",
+      "resolved": "https://registry.npmjs.org/promise/-/promise-6.0.1.tgz",
+      "dependencies": {
+        "asap": {
+          "version": "1.0.0",
+          "from": "asap@1.0.0",
+          "resolved": "https://registry.npmjs.org/asap/-/asap-1.0.0.tgz"
+        }
+      }
+    }
+  }
+}

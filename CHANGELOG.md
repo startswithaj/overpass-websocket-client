@@ -1,2 +1,2 @@
-# Overpass Websocket Bridge Changelog
+# Overpass WebSocket Client Changelog
 

@@ -1,6 +1,6 @@
 {
-  "name": "overpass-ws",
-  "description": "Websocket client for Overpass.",
+  "name": "overpass-websocket-client",
+  "description": "WebSocket client for Overpass.",
   "version": "0.0.0",
   "homepage": "https://github.com/IcecaveStudios/overpass-ws-client",
   "author": "James Harris",
