@@ -1,18 +1,18 @@
-EventEmitter = require 'node-event-emitter'
+EventEmitter = require "node-event-emitter"
 
 module.exports = class Subscriber extends EventEmitter
 
     constructor: (@connection) ->
-        @connection.on 'pubsub.publish', @_onPublish
+        @connection.on "pubsub.publish", @_onPublish
 
     subscribe: (topic) =>
         @connection.send \
-            type: 'pubsub.subscribe',
+            type: "pubsub.subscribe",
             topic: topic,
 
     unsubscribe: (topic) =>
         @connection.send \
-            type: 'pubsub.unsubscribe',
+            type: "pubsub.unsubscribe",
             topic: topic,
 
     _onPublish: (message) =>

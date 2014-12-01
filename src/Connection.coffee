@@ -1,81 +1,82 @@
-EventEmitter = require 'node-event-emitter'
-JSONStream = require 'JSONStream'
-Promise = require 'promise'
+EventEmitter = require "node-event-emitter"
+JSONStream = require "JSONStream"
+Promise = require "promise"
 
 module.exports = class Connection extends EventEmitter
 
     constructor: (@url) ->
-        @_connectionState = WebSocket.CLOSED
+        @connectionState = WebSocket.CLOSED
+        @isReady         = false
+        @socket          = null
 
-        @_parser = JSONStream.parse '*'
-        @_parser.on 'error', @_onParserError
-        @_parser.on 'data',  @_onParserData
+        @parser = JSONStream.parse "*"
+        @parser.on "error", @_parserError
+        @parser.on "data",  @_parserMessage
 
-    connect: =>
-        switch @_connectionState
-            when WebSocket.CONNECTING
-                return @_connectionPromise
-            when WebSocket.OPEN
-                return Promise.resolve()
-            when WebSocket.CLOSING
-                return @_connectionPromise = @_connectionPromise.then => @_doConnect()
-            when WebSocket.CLOSED
-                return @_connectionPromise = @_doConnect()
+    connect: (request = {}) =>
+        return switch @connectionState
+            when WebSocket.CONNECTING then @_connectionPromise
+            when WebSocket.OPEN       then Promise.resolve()
+            when WebSocket.CLOSING    then @_connectionPromise = @_connectionPromise.then => @_connect request
+            when WebSocket.CLOSED     then @_connectionPromise = @_connect request
 
     disconnect: =>
-        switch @_connectionState
-            when WebSocket.CONNECTING
-                return @_connectionPromise = @_connectionPromise.then => @_doDisconnect()
-            when WebSocket.OPEN
-                return @_connectionPromise = @_doDisconnect()
-            when WebSocket.CLOSING
-                return @_connectionPromise
-            when WebSocket.CLOSED
-                return Promise.resolve()
+        return switch @connectionState
+            when WebSocket.CONNECTING then @_connectionPromise = @_connectionPromise.then => @_disconnect()
+            when WebSocket.OPEN       then @_connectionPromise = @_disconnect()
+            when WebSocket.CLOSING    then @_connectionPromise
+            when WebSocket.CLOSED     then Promise.resolve()
 
     send: (message) =>
-        if message isnt Object message
-            throw new TypeError 'Messages must be objects.'
-        @connect().then =>
-            @_socket.send JSON.stringify [message]
+        @socket.send JSON.stringify [message]
 
-    _doConnect: =>
-        @_connectionState = WebSocket.CONNECTING
+    _connect: (request) =>
+        @connectionState = WebSocket.CONNECTING
 
         return new Promise (resolve, reject) =>
-            @_socket = new WebSocket @url
-            @_socket.onopen = =>
-                @_onConnectionOpen()
+            @socket = new WebSocket @url
+            @socket.onopen = =>
+                @_open request
                 resolve()
-            @_socket.onclose = =>
-                @_connectionState = WebSocket.CLOSED
-                @emit 'error'
+            @socket.onclose = =>
+                @connectionState = WebSocket.CLOSED
+                @emit "error", "Unable to connect to server."
                 reject()
 
-    _doDisconnect: =>
+    _disconnect: =>
         return new Promise (resolve, reject) =>
-            @_socket.close()
+            @socket.close()
+            resolve()
 
-    _onConnectionOpen: =>
-        @_socket.onclose   = @_onConnectionClose
-        @_socket.onmessage = @_onConnectionMessage
-        @_connectionState  = WebSocket.OPEN
-        @emit 'connect'
+    _open: (request) =>
+        @socket.onclose   = @_close
+        @socket.onmessage = @_message
+        @connectionState  = WebSocket.OPEN
 
-    _onConnectionClose: (event) =>
-        @_connectionState = WebSocket.CLOSED
-        @emit 'disconnect', event.code, event.reason
+        @send \
+            type: "handshake.request",
+            version: "1.0.0",
+            request: request,
 
-    _onConnectionMessage: (event) =>
-        @_parser.write event.data
+    _close: (event) =>
+        @connectionState = WebSocket.CLOSED
+        @socket = null
+        @emit "disconnect", event.code, event.reason
 
-    _onParserError: (error) =>
-        @_socket.close 4001, 'Invalid message received.'
-        @_connectionState = WebSocket.CLOSED
-        @emit 'error', error
+    _message: (event) =>
+        @parser.write event.data
 
-    _onParserData: (message) =>
-        if message is Object message
-            @emit message.type, message
-        else
-            @_onParserError "Invalid message received: #{JSON.stringify message}"
+    _parserError: (error) =>
+        @socket.close 4001, "Invalid message received."
+        @connectionState = WebSocket.CLOSED
+        @emit "error", error
+
+    _parserMessage: (message) =>
+        switch message.type
+            when 'handshake.approve'
+                @isReady = true
+                @emit 'connect', message.response
+            when 'handshake.reject'
+                @emit "error", message.reason
+            else
+                @emit message.type, message

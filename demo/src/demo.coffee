@@ -26,7 +26,7 @@ $ ->
 
     connect = ->
         print '* connecting'
-        connection.connect()
+        connection.connect foo: 'bar'
 
     reconnect = ->
         print "* reconnecting in 5 seconds"
@@ -38,8 +38,8 @@ $ ->
         print '* connected'
         subscriber.subscribe '*'
 
-    connection.on 'error', ->
-        print "* unable to connect"
+    connection.on 'error', (message) ->
+        print "* error: #{message}"
         reconnect()
 
     connection.on 'disconnect', (code, reason)->

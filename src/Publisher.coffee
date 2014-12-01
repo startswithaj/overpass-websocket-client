@@ -4,6 +4,6 @@ module.exports = class Publisher
 
     publish: (topic, payload) =>
         @connection.send \
-            type: 'pubsub.publish',
+            type: "pubsub.publish",
             topic: topic,
             payload: payload,

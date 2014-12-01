@@ -7,6 +7,6 @@ module.exports = class RpcClient
 
     invokeArray: (name, args) =>
         @connection.send \
-            type: 'rpc.request',
+            type: "rpc.request",
             name: name,
             arguments: arguments,
