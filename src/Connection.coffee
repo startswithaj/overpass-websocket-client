@@ -1,10 +1,12 @@
 EventEmitter = require "node-event-emitter"
 JSONStream = require "JSONStream"
-Promise = require "promise"
+bluebird = require "bluebird"
+{Promise} = bluebird
+WebSocketFactory = require './WebSocketFactory'
 
 module.exports = class Connection extends EventEmitter
 
-    constructor: (@url) ->
+    constructor: (@url, @webSocketFactory = new WebSocketFactory()) ->
         @connectionState = WebSocket.CLOSED
         @isReady         = false
         @socket          = null
@@ -16,7 +18,7 @@ module.exports = class Connection extends EventEmitter
     connect: (request = {}) =>
         return switch @connectionState
             when WebSocket.CONNECTING then @_connectionPromise
-            when WebSocket.OPEN       then Promise.resolve()
+            when WebSocket.OPEN       then bluebird.resolve()
             when WebSocket.CLOSING    then @_connectionPromise = @_connectionPromise.then => @_connect request
             when WebSocket.CLOSED     then @_connectionPromise = @_connect request
 
@@ -25,7 +27,7 @@ module.exports = class Connection extends EventEmitter
             when WebSocket.CONNECTING then @_connectionPromise = @_connectionPromise.then => @_disconnect()
             when WebSocket.OPEN       then @_connectionPromise = @_disconnect()
             when WebSocket.CLOSING    then @_connectionPromise
-            when WebSocket.CLOSED     then Promise.resolve()
+            when WebSocket.CLOSED     then bluebird.resolve()
 
     send: (message) =>
         @socket.send JSON.stringify [message]
@@ -34,14 +36,13 @@ module.exports = class Connection extends EventEmitter
         @connectionState = WebSocket.CONNECTING
 
         return new Promise (resolve, reject) =>
-            @socket = new WebSocket @url
+            @socket = @webSocketFactory.create @url
             @socket.onopen = =>
                 @_open request
                 resolve()
             @socket.onclose = =>
                 @connectionState = WebSocket.CLOSED
-                @emit "error", "Unable to connect to server."
-                reject()
+                reject new Error "Unable to connect to server."
 
     _disconnect: =>
         return new Promise (resolve, reject) =>

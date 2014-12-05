@@ -24,8 +24,8 @@
   },
   "dependencies": {
     "JSONStream": "^0.9.0",
-    "node-event-emitter": "0.0.1",
-    "promise": "^6.0.1"
+    "bluebird": "^2.3.11",
+    "node-event-emitter": "0.0.1"
   },
   "devDependencies": {
     "coffee-script": "^1.8",

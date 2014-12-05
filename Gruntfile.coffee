@@ -22,7 +22,7 @@ module.exports = (grunt) ->
     jasmine_node:
       options:
         coffee: true
-      all: 'spec'
+      all: 'test/spec'
 
     makeReport:
       src: 'build/reports/coverage.json'

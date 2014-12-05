@@ -1,0 +1,10 @@
+{
+  "version": 3,
+  "file": "WebSocketFactory.js",
+  "sourceRoot": "../src/",
+  "sources": [
+    "WebSocketFactory.coffee"
+  ],
+  "names": [],
+  "mappings": "AAAA;AAAA,MAAA,gBAAA;;AAAA,EAAA,MAAM,CAAC,OAAP,GAAuB;AAEN,IAAA,0BAAE,cAAF,GAAA;AAA+B,MAA9B,IAAC,CAAA,0CAAA,iBAAiB,SAAY,CAA/B;IAAA,CAAb;;AAAA,+BAEA,MAAA,GAAQ,SAAA,GAAA;aAAO;;;;SAAA,IAAC,CAAA,cAAD,EAAgB,SAAhB,gBAAP;IAAA,CAFR,CAAA;;4BAAA;;MAFJ,CAAA;AAAA"
+}
