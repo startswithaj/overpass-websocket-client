@@ -1,7 +1,7 @@
-requireHelper = require "./require-helper"
-Subscriber = requireHelper "Subscriber"
+requireHelper = require "../require-helper"
+Subscriber = requireHelper "pubsub/Subscriber"
 
-describe "Subscriber", ->
+describe "pubsub.Subscriber", ->
 
     beforeEach ->
         @connection = jasmine.createSpyObj "connection", ["on", "send"]

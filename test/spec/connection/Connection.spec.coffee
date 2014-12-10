@@ -1,10 +1,10 @@
 bluebird = require "bluebird"
-require "../src/WebSocket"
-requireHelper = require './require-helper'
-Connection = requireHelper "Connection"
-WebSocketFactory = requireHelper "WebSocketFactory"
+require "../../src/WebSocket"
+requireHelper = require '../require-helper'
+Connection = requireHelper "connection/Connection"
+WebSocketFactory = requireHelper "connection/WebSocketFactory"
 
-describe "Connection", ->
+describe "connection.Connection", ->
 
     beforeEach ->
         @url = "http://example.org/"

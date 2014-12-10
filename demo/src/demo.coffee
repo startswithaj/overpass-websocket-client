@@ -1,6 +1,6 @@
-Connection = require '../../src/Connection'
-Publisher = require '../../src/Publisher'
-Subscriber = require '../../src/Subscriber'
+Connection = require '../../src/connection/Connection'
+Publisher = require '../../src/pubsub/Publisher'
+Subscriber = require '../../src/pubsub/Subscriber'
 
 $ ->
     form   = $ '#inputForm'

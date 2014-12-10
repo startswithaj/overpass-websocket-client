@@ -1,8 +1,8 @@
-require "../src/WebSocket"
-requireHelper = require './require-helper'
-WebSocketFactory = requireHelper "WebSocketFactory"
+require "../../src/WebSocket"
+requireHelper = require '../require-helper'
+WebSocketFactory = requireHelper "connection/WebSocketFactory"
 
-describe "WebSocketFactory", ->
+describe "connection.WebSocketFactory", ->
 
     beforeEach ->
         @webSocketClass = class

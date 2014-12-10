@@ -1,11 +1,11 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 var Connection, Publisher, Subscriber;
 
-Connection = require('../../src/Connection');
+Connection = require('../../src/connection/Connection');
 
-Publisher = require('../../src/Publisher');
+Publisher = require('../../src/pubsub/Publisher');
 
-Subscriber = require('../../src/Subscriber');
+Subscriber = require('../../src/pubsub/Subscriber');
 
 $(function() {
   var connect, connection, form, input, output, print, publisher, reconnect, subscriber;
@@ -63,7 +63,7 @@ $(function() {
 
 
 
-},{"../../src/Connection":63,"../../src/Publisher":64,"../../src/Subscriber":66}],2:[function(require,module,exports){
+},{"../../src/connection/Connection":65,"../../src/pubsub/Publisher":67,"../../src/pubsub/Subscriber":68}],2:[function(require,module,exports){
 (function (process,Buffer){
 
 
@@ -260,7 +260,7 @@ if(!module.parent && process.title !== 'browser') {
 }
 
 }).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":48,"buffer":41,"jsonparse":3,"through":4}],3:[function(require,module,exports){
+},{"_process":50,"buffer":43,"jsonparse":3,"through":4}],3:[function(require,module,exports){
 (function (Buffer){
 /*global Buffer*/
 // Named constants with unique integer values
@@ -665,7 +665,7 @@ proto.onToken = function (token, value) {
 module.exports = Parser;
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":41}],4:[function(require,module,exports){
+},{"buffer":43}],4:[function(require,module,exports){
 (function (process){
 var Stream = require('stream')
 
@@ -777,7 +777,7 @@ function through (write, end, opts) {
 
 
 }).call(this,require('_process'))
-},{"_process":48,"stream":60}],5:[function(require,module,exports){
+},{"_process":50,"stream":62}],5:[function(require,module,exports){
 /**
  * The MIT License (MIT)
  * 
@@ -944,7 +944,7 @@ Async.prototype._reset = function Async$_reset() {
 module.exports = new Async();
 
 }).call(this,require('_process'))
-},{"./queue.js":29,"./schedule.js":32,"./util.js":39,"_process":48}],7:[function(require,module,exports){
+},{"./queue.js":29,"./schedule.js":32,"./util.js":39,"_process":50}],7:[function(require,module,exports){
 /**
  * The MIT License (MIT)
  * 
@@ -3813,7 +3813,7 @@ return Promise;
 };
 
 }).call(this,require('_process'))
-},{"./any.js":5,"./async.js":6,"./call_get.js":8,"./cancel.js":9,"./captured_trace.js":10,"./catch_filter.js":11,"./direct_resolve.js":12,"./each.js":13,"./errors.js":14,"./errors_api_rejection":15,"./filter.js":17,"./finally.js":18,"./generators.js":19,"./join.js":20,"./map.js":21,"./nodeify.js":22,"./progress.js":23,"./promise_array.js":25,"./promise_resolver.js":26,"./promisify.js":27,"./props.js":28,"./race.js":30,"./reduce.js":31,"./settle.js":33,"./some.js":34,"./synchronous_inspection.js":35,"./thenables.js":36,"./timers.js":37,"./using.js":38,"./util.js":39,"_process":48}],25:[function(require,module,exports){
+},{"./any.js":5,"./async.js":6,"./call_get.js":8,"./cancel.js":9,"./captured_trace.js":10,"./catch_filter.js":11,"./direct_resolve.js":12,"./each.js":13,"./errors.js":14,"./errors_api_rejection":15,"./filter.js":17,"./finally.js":18,"./generators.js":19,"./join.js":20,"./map.js":21,"./nodeify.js":22,"./progress.js":23,"./promise_array.js":25,"./promise_resolver.js":26,"./promisify.js":27,"./props.js":28,"./race.js":30,"./reduce.js":31,"./settle.js":33,"./some.js":34,"./synchronous_inspection.js":35,"./thenables.js":36,"./timers.js":37,"./using.js":38,"./util.js":39,"_process":50}],25:[function(require,module,exports){
 /**
  * The MIT License (MIT)
  * 
@@ -5070,7 +5070,7 @@ else throw new Error("no async scheduler available");
 module.exports = schedule;
 
 }).call(this,require('_process'))
-},{"_process":48}],33:[function(require,module,exports){
+},{"_process":50}],33:[function(require,module,exports){
 /**
  * The MIT License (MIT)
  * 
@@ -6100,6 +6100,262 @@ var ret = {
 module.exports = ret;
 
 },{"./es5.js":16}],40:[function(require,module,exports){
+module.exports = require('./lib/enum');
+},{"./lib/enum":41}],41:[function(require,module,exports){
+(function (global){
+(function (root, module, global, define) {
+
+  "use strict";
+
+  /**
+   * Represents an Item of an Enum.
+   * @param {String} key   The Enum key.
+   * @param {Number} value The Enum value.
+   */
+  function EnumItem(key, value) {
+    this.key = key;
+    this.value = value;
+  }
+
+  EnumItem.prototype = {
+
+    /**
+     * Checks if the flagged EnumItem has the passing object.
+     * @param  {EnumItem || String || Number} value The object to check with.
+     * @return {Boolean}                            The check result.
+     */
+    has: function(value) {
+      if (value instanceof EnumItem || (typeof(value) === 'object' && value.key !== undefined && value.value !== undefined)) {
+        return (this.value & value.value) !== 0;
+      } else if (typeof(value) === 'string') {
+        return this.key.indexOf(value) >= 0;
+      } else {
+        return (this.value & value) !== 0;
+      }
+    },
+
+    /**
+     * Checks if the EnumItem is the same as the passing object.
+     * @param  {EnumItem || String || Number} key The object to check with.
+     * @return {Boolean}                          The check result.
+     */
+    is: function(key) {
+      if (key instanceof EnumItem || (typeof(key) === 'object' && key.key !== undefined && key.value !== undefined)) {
+        return this.key === key.key;
+      } else if (typeof(key) === 'string') {
+        return this.key === key;
+      } else {
+        return this.value === key;
+      }
+    },
+
+    /**
+     * Returns String representation of this EnumItem.
+     * @return {String} String representation of this EnumItem.
+     */
+    toString: function() {
+      return this.key;
+    },
+
+    /**
+     * Returns JSON object representation of this EnumItem.
+     * @return {String} JSON object representation of this EnumItem.
+     */
+    toJSON: function() {
+      return this.key;
+    },
+
+    /**
+     * Returns the value to compare with.
+     * @return {String} The value to compare with.
+     */
+    valueOf: function() {
+      return this.key;
+    }
+
+  };
+
+
+  /**
+   * Represents an Enum with enum items.
+   * @param {Array || Object}  map     This are the enum items.
+   * @param {String || Object} options This are options. [optional]
+   */
+  function Enum(map, options) {
+
+    if (options && typeof(options) === 'string') {
+      options = { name: options };
+    }
+
+    this._options = options || {};
+    this._options.separator = this._options.separator || ' | ';
+
+    this.enums = [];
+
+    if (map.length) {
+      var array = map;
+      map = {};
+
+      for (var i = 0; i < array.length; i++) {
+        map[array[i]] = Math.pow(2, i);
+      }
+    }
+
+    for (var member in map) {
+      if ((this._options.name && member === 'name') || member === '_options' || member === 'get' || member === 'getKey' || member === 'getValue' || member === 'enums' || member === 'isFlaggable') {
+        throw new Error('Enum key "' + member + '" is a reserved word!');
+      }
+      this[member] = new EnumItem(member, map[member]);
+      this.enums.push(this[member]);
+    }
+
+    if (this._options.name) {
+      this.name = this._options.name;
+    }
+
+    var self = this;
+
+    function isFlaggable() {
+      for (var i = 0, len = self.enums.length; i < len; i++) {
+        var e = self.enums[i];
+
+        if (!((e.value !== 0) && !(e.value & (e.value - 1)))) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    this.isFlaggable = isFlaggable();
+  }
+
+  Enum.prototype = {
+
+    /**
+     * Returns the appropriate EnumItem key.
+     * @param  {EnumItem || String || Number} key The object to get with.
+     * @return {String}                           The get result.
+     */
+    getKey: function(value) {
+      var item = this.get(value);
+      if (item) {
+        return item.key;
+      } else {
+        return 'Undefined';
+      }
+    },
+
+    /**
+     * Returns the appropriate EnumItem value.
+     * @param  {EnumItem || String || Number} key The object to get with.
+     * @return {Number}                           The get result.
+     */
+    getValue: function(key) {
+      var item = this.get(key);
+      if (item) {
+        return item.value;
+      } else {
+        return null;
+      }
+    },
+
+    /**
+     * Returns the appropriate EnumItem.
+     * @param  {EnumItem || String || Number} key The object to get with.
+     * @return {EnumItem}                         The get result.
+     */
+    get: function(key) {
+      if (key === null || key === undefined) return null;
+
+      if (key instanceof EnumItem || (typeof(key) === 'object' && key.key !== undefined && key.value !== undefined)) {
+        var foundIndex = this.enums.indexOf(key);
+        if (foundIndex >= 0) {
+          return key;
+        }
+        if (!this.isFlaggable || (this.isFlaggable && key.key.indexOf(this._options.separator) < 0)) {
+          return null;
+        }
+        return this.get(key.key);
+      } else if (typeof(key) === 'string') {
+        if (key.indexOf(this._options.separator) > 0) {
+          var parts = key.split(this._options.separator);
+
+          var value = 0;
+          for(var i = 0; i < parts.length; i++) {
+            var part = parts[i];
+
+            value |= this[part].value;
+          }
+
+          return new EnumItem(key, value);
+        } else {
+          return this[key];
+        }
+      } else {
+        for (var m in this) {
+          if (this.hasOwnProperty(m)) {
+            if (this[m].value === key) {
+              return this[m];
+            }
+          }
+        }
+
+        var result = null;
+
+        if (this.isFlaggable) {
+          for (var n in this) {
+            if (this.hasOwnProperty(n)) {
+              if ((key & this[n].value) !== 0) {
+                if (result) {
+                  result += this._options.separator;
+                } else {
+                  result = '';
+                }
+                result += n;
+              }
+            }
+          }
+        }
+
+        return this.get(result || null);
+      }
+    }
+
+  };
+
+
+  if (module && module.exports) {
+    module.exports = Enum;
+  } else if (define) {
+    define(function () {
+      return Enum;
+    });
+  } else {
+    root.Enum = Enum;
+  }
+
+  if (module && module.exports && global) {
+
+    /**
+     * Registers the Enum Type globally in node.js.
+     * @param  {String} key Global variable. [optional]
+     */
+    Enum.register = function(key) {
+      key = key || 'Enum';
+      if (!global[key]) {
+        global[key] = Enum;
+      }
+    };
+  }
+
+}(
+  this,
+  typeof(module) !== 'undefined' ? module : undefined,
+  typeof(global) !== 'undefined' ? global : undefined,
+  typeof(define) !== 'undefined' ? define : undefined
+));
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}],42:[function(require,module,exports){
 'use strict';
 
 var matchOperatorsRe = /[|\\{}()[\]^$+*?.]/g;
@@ -6112,7 +6368,7 @@ module.exports = function (str) {
 	return str.replace(matchOperatorsRe,  '\\$&');
 };
 
-},{}],41:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 /*!
  * The buffer module from node.js, for the browser.
  *
@@ -7165,7 +7421,7 @@ function decodeUtf8Char (str) {
   }
 }
 
-},{"base64-js":42,"ieee754":43,"is-array":44}],42:[function(require,module,exports){
+},{"base64-js":44,"ieee754":45,"is-array":46}],44:[function(require,module,exports){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 ;(function (exports) {
@@ -7287,7 +7543,7 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 	exports.fromByteArray = uint8ToBase64
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
-},{}],43:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 exports.read = function(buffer, offset, isLE, mLen, nBytes) {
   var e, m,
       eLen = nBytes * 8 - mLen - 1,
@@ -7373,7 +7629,7 @@ exports.write = function(buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128;
 };
 
-},{}],44:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 
 /**
  * isArray
@@ -7408,7 +7664,7 @@ module.exports = isArray || function (val) {
   return !! val && '[object Array]' == str.call(val);
 };
 
-},{}],45:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -7711,7 +7967,7 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],46:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -7736,12 +7992,12 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],47:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 module.exports = Array.isArray || function (arr) {
   return Object.prototype.toString.call(arr) == '[object Array]';
 };
 
-},{}],48:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -7829,10 +8085,10 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],49:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 module.exports = require("./lib/_stream_duplex.js")
 
-},{"./lib/_stream_duplex.js":50}],50:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":52}],52:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -7925,7 +8181,7 @@ function forEach (xs, f) {
 }
 
 }).call(this,require('_process'))
-},{"./_stream_readable":52,"./_stream_writable":54,"_process":48,"core-util-is":55,"inherits":46}],51:[function(require,module,exports){
+},{"./_stream_readable":54,"./_stream_writable":56,"_process":50,"core-util-is":57,"inherits":48}],53:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -7973,7 +8229,7 @@ PassThrough.prototype._transform = function(chunk, encoding, cb) {
   cb(null, chunk);
 };
 
-},{"./_stream_transform":53,"core-util-is":55,"inherits":46}],52:[function(require,module,exports){
+},{"./_stream_transform":55,"core-util-is":57,"inherits":48}],54:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -8959,7 +9215,7 @@ function indexOf (xs, x) {
 }
 
 }).call(this,require('_process'))
-},{"_process":48,"buffer":41,"core-util-is":55,"events":45,"inherits":46,"isarray":47,"stream":60,"string_decoder/":61}],53:[function(require,module,exports){
+},{"_process":50,"buffer":43,"core-util-is":57,"events":47,"inherits":48,"isarray":49,"stream":62,"string_decoder/":63}],55:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -9171,7 +9427,7 @@ function done(stream, er) {
   return stream.push(null);
 }
 
-},{"./_stream_duplex":50,"core-util-is":55,"inherits":46}],54:[function(require,module,exports){
+},{"./_stream_duplex":52,"core-util-is":57,"inherits":48}],56:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -9561,7 +9817,7 @@ function endWritable(stream, state, cb) {
 }
 
 }).call(this,require('_process'))
-},{"./_stream_duplex":50,"_process":48,"buffer":41,"core-util-is":55,"inherits":46,"stream":60}],55:[function(require,module,exports){
+},{"./_stream_duplex":52,"_process":50,"buffer":43,"core-util-is":57,"inherits":48,"stream":62}],57:[function(require,module,exports){
 (function (Buffer){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -9671,10 +9927,10 @@ function objectToString(o) {
   return Object.prototype.toString.call(o);
 }
 }).call(this,require("buffer").Buffer)
-},{"buffer":41}],56:[function(require,module,exports){
+},{"buffer":43}],58:[function(require,module,exports){
 module.exports = require("./lib/_stream_passthrough.js")
 
-},{"./lib/_stream_passthrough.js":51}],57:[function(require,module,exports){
+},{"./lib/_stream_passthrough.js":53}],59:[function(require,module,exports){
 var Stream = require('stream'); // hack to fix a circular dependency issue when used with browserify
 exports = module.exports = require('./lib/_stream_readable.js');
 exports.Stream = Stream;
@@ -9684,13 +9940,13 @@ exports.Duplex = require('./lib/_stream_duplex.js');
 exports.Transform = require('./lib/_stream_transform.js');
 exports.PassThrough = require('./lib/_stream_passthrough.js');
 
-},{"./lib/_stream_duplex.js":50,"./lib/_stream_passthrough.js":51,"./lib/_stream_readable.js":52,"./lib/_stream_transform.js":53,"./lib/_stream_writable.js":54,"stream":60}],58:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":52,"./lib/_stream_passthrough.js":53,"./lib/_stream_readable.js":54,"./lib/_stream_transform.js":55,"./lib/_stream_writable.js":56,"stream":62}],60:[function(require,module,exports){
 module.exports = require("./lib/_stream_transform.js")
 
-},{"./lib/_stream_transform.js":53}],59:[function(require,module,exports){
+},{"./lib/_stream_transform.js":55}],61:[function(require,module,exports){
 module.exports = require("./lib/_stream_writable.js")
 
-},{"./lib/_stream_writable.js":54}],60:[function(require,module,exports){
+},{"./lib/_stream_writable.js":56}],62:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -9819,7 +10075,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":45,"inherits":46,"readable-stream/duplex.js":49,"readable-stream/passthrough.js":56,"readable-stream/readable.js":57,"readable-stream/transform.js":58,"readable-stream/writable.js":59}],61:[function(require,module,exports){
+},{"events":47,"inherits":48,"readable-stream/duplex.js":51,"readable-stream/passthrough.js":58,"readable-stream/readable.js":59,"readable-stream/transform.js":60,"readable-stream/writable.js":61}],63:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -10042,7 +10298,7 @@ function base64DetectIncompleteChar(buffer) {
   this.charLength = this.charReceived ? 3 : 0;
 }
 
-},{"buffer":41}],62:[function(require,module,exports){
+},{"buffer":43}],64:[function(require,module,exports){
 /**
  * Utility functions
  */
@@ -10339,7 +10595,7 @@ EventEmitter.listenerCount = function(emitter, type) {
   return ret;
 };
 
-},{}],63:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 var Connection, EventEmitter, JSONStream, Promise, WebSocketFactory, bluebird,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __hasProp = {}.hasOwnProperty,
@@ -10492,7 +10748,29 @@ module.exports = Connection = (function(_super) {
 
 
 
-},{"./WebSocketFactory":67,"JSONStream":2,"bluebird":7,"node-event-emitter":62}],64:[function(require,module,exports){
+},{"./WebSocketFactory":66,"JSONStream":2,"bluebird":7,"node-event-emitter":64}],66:[function(require,module,exports){
+var WebSocketFactory;
+
+module.exports = WebSocketFactory = (function() {
+  function WebSocketFactory(webSocketClass) {
+    this.webSocketClass = webSocketClass != null ? webSocketClass : WebSocket;
+  }
+
+  WebSocketFactory.prototype.create = function() {
+    return (function(func, args, ctor) {
+      ctor.prototype = func.prototype;
+      var child = new ctor, result = func.apply(child, args);
+      return Object(result) === result ? result : child;
+    })(this.webSocketClass, arguments, function(){});
+  };
+
+  return WebSocketFactory;
+
+})();
+
+
+
+},{}],67:[function(require,module,exports){
 var Publisher,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -10516,39 +10794,7 @@ module.exports = Publisher = (function() {
 
 
 
-},{}],65:[function(require,module,exports){
-var RpcClient,
-  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-  __slice = [].slice;
-
-module.exports = RpcClient = (function() {
-  function RpcClient(connection) {
-    this.connection = connection;
-    this.invokeArray = __bind(this.invokeArray, this);
-    this.invoke = __bind(this.invoke, this);
-  }
-
-  RpcClient.prototype.invoke = function() {
-    var args, name;
-    name = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-    return this.invokeArray(name, args);
-  };
-
-  RpcClient.prototype.invokeArray = function(name, args) {
-    return this.connection.send({
-      type: "rpc.request",
-      name: name,
-      "arguments": arguments
-    });
-  };
-
-  return RpcClient;
-
-})();
-
-
-
-},{}],66:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 var EventEmitter, Subscriber, regexEscape,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __hasProp = {}.hasOwnProperty,
@@ -10652,26 +10898,276 @@ module.exports = Subscriber = (function(_super) {
 
 
 
-},{"escape-string-regexp":40,"node-event-emitter":62}],67:[function(require,module,exports){
-var WebSocketFactory;
+},{"escape-string-regexp":42,"node-event-emitter":64}],69:[function(require,module,exports){
+var InvalidMessageError, Promise, Request, Response, ResponseCode, RpcClient, bluebird,
+  __slice = [].slice;
 
-module.exports = WebSocketFactory = (function() {
-  function WebSocketFactory(webSocketClass) {
-    this.webSocketClass = webSocketClass != null ? webSocketClass : WebSocket;
+bluebird = require('bluebird');
+
+Promise = require('bluebird').Promise;
+
+InvalidMessageError = require('./error/InvalidMessageError');
+
+Request = require('./message/Request');
+
+Response = require('./message/Response');
+
+ResponseCode = require('./message/ResponseCode');
+
+module.exports = RpcClient = (function() {
+  function RpcClient(connection, timeout) {
+    this.connection = connection;
+    this.timeout = timeout != null ? timeout : 10;
+    this._requests = {};
+    this._id = 0;
+    this.connection.on("message.rpc.response", this._recv);
   }
 
-  WebSocketFactory.prototype.create = function() {
-    return (function(func, args, ctor) {
-      ctor.prototype = func.prototype;
-      var child = new ctor, result = func.apply(child, args);
-      return Object(result) === result ? result : child;
-    })(this.webSocketClass, arguments, function(){});
+  RpcClient.prototype.invoke = function() {
+    var args, id, name, request;
+    name = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+    id = (++this._id).toString();
+    request = new Request(name, args);
+    return this._send(request, id).then((function(_this) {
+      return function(response) {
+        return response.extract();
+      };
+    })(this));
   };
 
-  return WebSocketFactory;
+  RpcClient.prototype.invokeArray = function(name, args) {
+    return this.invoke.apply(this, [name].concat(__slice.call(args)));
+  };
+
+  RpcClient.prototype._send = function(request, id) {
+    var promise, timeout;
+    promise = new Promise((function(_this) {
+      return function(resolve, reject) {
+        _this._requests[id] = {
+          resolve: resolve,
+          reject: reject
+        };
+        return _this.connection.send({
+          type: "rpc.request",
+          id: id,
+          name: request.name,
+          "arguments": request["arguments"]
+        });
+      };
+    })(this));
+    timeout = Math.round(this.timeout * 1000);
+    return promise.timeout(timeout, 'RPC request timed out.')["finally"]((function(_this) {
+      return function() {
+        return delete _this._requests[id];
+      };
+    })(this));
+  };
+
+  RpcClient.prototype._recv = function(message) {
+    var code, error;
+    if (message.id == null) {
+      return;
+    }
+    if (this._requests[message.id] == null) {
+      return;
+    }
+    if (!(code = ResponseCode.get(message.code))) {
+      error = new InvalidMessageError('Response code is unrecognised.');
+      this.connection.close(4001, error.message);
+      return this._requests[message.id].reject(error);
+    }
+    if (code !== ResponseCode.SUCCESS && typeof message.value !== 'string') {
+      error = new InvalidMessageError('Response error message must be a string.');
+      this.connection.close(4001, error.message);
+      return this._requests[message.id].reject(error);
+    }
+    return this._requests[message.id].resolve(new Response(code, message.value));
+  };
+
+  return RpcClient;
 
 })();
 
 
 
-},{}]},{},[63,64,65,66,67,1]);
+},{"./error/InvalidMessageError":72,"./message/Request":75,"./message/Response":76,"./message/ResponseCode":77,"bluebird":7}],70:[function(require,module,exports){
+var ExecutionError, ResponseCode,
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+ResponseCode = require('../message/ResponseCode');
+
+module.exports = ExecutionError = (function(_super) {
+  __extends(ExecutionError, _super);
+
+  function ExecutionError(message) {
+    this.message = message;
+    this.responseCode = ResponseCode.ERROR;
+  }
+
+  return ExecutionError;
+
+})(Error);
+
+
+
+},{"../message/ResponseCode":77}],71:[function(require,module,exports){
+var InvalidArgumentsError, ResponseCode,
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+ResponseCode = require('../message/ResponseCode');
+
+module.exports = InvalidArgumentsError = (function(_super) {
+  __extends(InvalidArgumentsError, _super);
+
+  function InvalidArgumentsError(message) {
+    this.message = message;
+    this.responseCode = ResponseCode.INVALID_ARGUMENTS;
+  }
+
+  return InvalidArgumentsError;
+
+})(Error);
+
+
+
+},{"../message/ResponseCode":77}],72:[function(require,module,exports){
+var InvalidMessageError, ResponseCode,
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+ResponseCode = require('../message/ResponseCode');
+
+module.exports = InvalidMessageError = (function(_super) {
+  __extends(InvalidMessageError, _super);
+
+  function InvalidMessageError(message) {
+    this.message = message;
+    this.responseCode = ResponseCode.INVALID_MESSAGE;
+  }
+
+  return InvalidMessageError;
+
+})(Error);
+
+
+
+},{"../message/ResponseCode":77}],73:[function(require,module,exports){
+var TimeoutError,
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+module.exports = TimeoutError = (function(_super) {
+  __extends(TimeoutError, _super);
+
+  function TimeoutError(timeout) {
+    this.timeout = timeout;
+    this.message = 'RPC call timed out after ' + this.timeout + ' seconds.';
+  }
+
+  return TimeoutError;
+
+})(Error);
+
+
+
+},{}],74:[function(require,module,exports){
+var ResponseCode, UnknownProcedureError,
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+ResponseCode = require('../message/ResponseCode');
+
+module.exports = UnknownProcedureError = (function(_super) {
+  __extends(UnknownProcedureError, _super);
+
+  function UnknownProcedureError(procedureName) {
+    this.procedureName = procedureName;
+    this.message = 'Unknown procedure: ' + this.procedureName + '.';
+    this.responseCode = ResponseCode.UNKNOWN_PROCEDURE;
+  }
+
+  return UnknownProcedureError;
+
+})(Error);
+
+
+
+},{"../message/ResponseCode":77}],75:[function(require,module,exports){
+var Request;
+
+module.exports = Request = (function() {
+  function Request(name, _arguments) {
+    this.name = name;
+    this["arguments"] = _arguments;
+  }
+
+  Request.prototype.toString = function() {
+    return this.name + '(' + this["arguments"].map(JSON.stringify).join(', ') + ')';
+  };
+
+  return Request;
+
+})();
+
+
+
+},{}],76:[function(require,module,exports){
+var ExecutionError, InvalidMessageError, Response, ResponseCode, UnknownProcedureError;
+
+ExecutionError = require('../error/ExecutionError');
+
+InvalidMessageError = require('../error/InvalidMessageError');
+
+ResponseCode = require('./ResponseCode');
+
+UnknownProcedureError = require('../error/UnknownProcedureError');
+
+module.exports = Response = (function() {
+  function Response(code, value) {
+    this.code = code;
+    this.value = value;
+  }
+
+  Response.prototype.extract = function() {
+    if (this.code === ResponseCode.SUCCESS) {
+      return this.value;
+    }
+    if (this.code === ResponseCode.INVALID_MESSAGE) {
+      throw new InvalidMessageError(this.value);
+    }
+    if (this.code === ResponseCode.UNKNOWN_PROCEDURE) {
+      throw new UnknownProcedureError(this.value);
+    }
+    throw new ExecutionError(this.value);
+  };
+
+  Response.prototype.toString = function() {
+    var valueString;
+    valueString = this.code.is('SUCCESS') ? JSON.stringify(this.value) : this.value;
+    return this.code.key + '(' + valueString + ')';
+  };
+
+  return Response;
+
+})();
+
+
+
+},{"../error/ExecutionError":70,"../error/InvalidMessageError":72,"../error/UnknownProcedureError":74,"./ResponseCode":77}],77:[function(require,module,exports){
+var Enum;
+
+Enum = require('enum');
+
+module.exports = new Enum({
+  SUCCESS: 0,
+  ERROR: 10,
+  INVALID_MESSAGE: 11,
+  UNKNOWN_PROCEDURE: 12,
+  INVALID_ARGUMENTS: 13
+});
+
+
+
+},{"enum":40}]},{},[65,66,67,68,69,70,71,72,73,74,75,76,77,1]);
