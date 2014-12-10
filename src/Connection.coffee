@@ -2,57 +2,58 @@ EventEmitter = require "node-event-emitter"
 JSONStream = require "JSONStream"
 bluebird = require "bluebird"
 {Promise} = bluebird
-WebSocketFactory = require './WebSocketFactory'
+WebSocketFactory = require "./WebSocketFactory"
 
 module.exports = class Connection extends EventEmitter
 
     constructor: (@url, @webSocketFactory = new WebSocketFactory()) ->
-        @connectionState = WebSocket.CLOSED
-        @isReady         = false
-        @socket          = null
+        @_connectionState = WebSocket.CLOSED
+        @_socket          = null
 
         @parser = JSONStream.parse "*"
         @parser.on "error", @_parserError
         @parser.on "data",  @_parserMessage
 
     connect: (request = {}) =>
-        return switch @connectionState
+        return switch @_connectionState
             when WebSocket.CONNECTING then @_connectionPromise
             when WebSocket.OPEN       then bluebird.resolve()
             when WebSocket.CLOSING    then @_connectionPromise = @_connectionPromise.then => @_connect request
             when WebSocket.CLOSED     then @_connectionPromise = @_connect request
 
     disconnect: =>
-        return switch @connectionState
+        return switch @_connectionState
             when WebSocket.CONNECTING then @_connectionPromise = @_connectionPromise.then => @_disconnect()
             when WebSocket.OPEN       then @_connectionPromise = @_disconnect()
             when WebSocket.CLOSING    then @_connectionPromise
             when WebSocket.CLOSED     then bluebird.resolve()
 
     send: (message) =>
-        @socket.send JSON.stringify [message]
+        @_socket.send JSON.stringify [message]
 
     _connect: (request) =>
-        @connectionState = WebSocket.CONNECTING
+        @_connectionState = WebSocket.CONNECTING
 
         return new Promise (resolve, reject) =>
-            @socket = @webSocketFactory.create @url
-            @socket.onopen = =>
+            @_socket = @webSocketFactory.create @url
+            @_socket.onopen = =>
                 @_open request
                 resolve()
-            @socket.onclose = =>
-                @connectionState = WebSocket.CLOSED
+            @_socket.onclose = =>
+                @_connectionState = WebSocket.CLOSED
                 reject new Error "Unable to connect to server."
 
     _disconnect: =>
+        @_connectionState = WebSocket.CLOSING
+
         return new Promise (resolve, reject) =>
-            @socket.close()
-            resolve()
+            @on "disconnect", -> resolve()
+            @_socket.close()
 
     _open: (request) =>
-        @socket.onclose   = @_close
-        @socket.onmessage = @_message
-        @connectionState  = WebSocket.OPEN
+        @_socket.onclose   = @_close
+        @_socket.onmessage = @_message
+        @_connectionState  = WebSocket.OPEN
 
         @send \
             type: "handshake.request",
@@ -60,24 +61,23 @@ module.exports = class Connection extends EventEmitter
             request: request,
 
     _close: (event) =>
-        @connectionState = WebSocket.CLOSED
-        @socket = null
+        @_connectionState = WebSocket.CLOSED
+        @_socket = null
         @emit "disconnect", event.code, event.reason
 
     _message: (event) =>
         @parser.write event.data
 
     _parserError: (error) =>
-        @socket.close 4001, "Invalid message received."
-        @connectionState = WebSocket.CLOSED
+        @_socket.close 4001, "Invalid message received."
+        @_connectionState = WebSocket.CLOSED
         @emit "error", error
 
     _parserMessage: (message) =>
         switch message.type
-            when 'handshake.approve'
-                @isReady = true
-                @emit 'connect', message.response
-            when 'handshake.reject'
+            when "handshake.approve"
+                @emit "connect", message.response
+            when "handshake.reject"
                 @emit "error", message.reason
             else
-                @emit message.type, message
+                @emit "message.#{message.type}", message

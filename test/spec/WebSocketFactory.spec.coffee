@@ -1,5 +1,6 @@
 require "../src/WebSocket"
-WebSocketFactory = require "../../src/WebSocketFactory"
+requireHelper = require './require-helper'
+WebSocketFactory = requireHelper "WebSocketFactory"
 
 describe "WebSocketFactory", ->
 
