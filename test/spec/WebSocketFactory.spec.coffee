@@ -19,7 +19,7 @@ describe "WebSocketFactory", ->
 
     describe "create()", ->
 
-      it "passes arguments to the web socket class constructor", ->
-        actual = @subject.create "a", "b"
+        it "passes arguments to the web socket class constructor", ->
+            actual = @subject.create "a", "b"
 
-        expect(actual.constructorArguments).toEqual ["a", "b"]
+            expect(actual.constructorArguments).toEqual ["a", "b"]
