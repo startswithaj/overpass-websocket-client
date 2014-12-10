@@ -65,8 +65,7 @@ module.exports = class Connection extends EventEmitter
         @_socket = null
         @emit "disconnect", event.code, event.reason
 
-    _message: (event) =>
-        @parser.write event.data
+    _message: (event) => @parser.write event.data
 
     _parserError: (error) =>
         @_socket.close 4001, "Invalid message received."

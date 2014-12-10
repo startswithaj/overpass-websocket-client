@@ -25,6 +25,7 @@
   "dependencies": {
     "JSONStream": "^0.9.0",
     "bluebird": "^2.3.11",
+    "escape-string-regexp": "^1.0.2",
     "node-event-emitter": "0.0.1"
   },
   "devDependencies": {
