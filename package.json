@@ -13,8 +13,9 @@
     "url": "https://github.com/IcecaveStudios/overpass-ws-client/issues"
   },
   "directories": {
-    "lib": "./lib"
+    "lib": "lib"
   },
+  "main": "lib",
   "scripts": {
     "test": "grunt test"
   },
