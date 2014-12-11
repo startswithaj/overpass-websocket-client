@@ -35,11 +35,12 @@ module.exports = class Connection extends EventEmitter
         @_connectionState = WebSocket.CONNECTING
 
         return new Promise (resolve, reject) =>
+            @_webSocketResolvers = {resolve, reject}
             @_socket = @webSocketFactory.create @url
             @_socket.onopen = =>
                 @_open request
-                resolve()
             @_socket.onclose = =>
+                @_webSocketResolvers = null
                 @_connectionState = WebSocket.CLOSED
                 reject new Error "Unable to connect to server."
 
@@ -53,7 +54,6 @@ module.exports = class Connection extends EventEmitter
     _open: (request) =>
         @_socket.onclose   = @_close
         @_socket.onmessage = @_message
-        @_connectionState  = WebSocket.OPEN
 
         @send \
             type: "handshake.request",
@@ -75,8 +75,14 @@ module.exports = class Connection extends EventEmitter
     _parserMessage: (message) =>
         switch message.type
             when "handshake.approve"
+                @_connectionState = WebSocket.OPEN
+                @_webSocketResolvers.resolve message.response
+                @_webSocketResolvers = null
                 @emit "connect", message.response
             when "handshake.reject"
+                @_connectionState = WebSocket.CLOSED
+                @_webSocketResolvers.reject message.reason
+                @_webSocketResolvers = null
                 @emit "error", message.reason
             else
                 @emit "message.#{message.type}", message

@@ -10681,12 +10681,16 @@ module.exports = Connection = (function(_super) {
     this._connectionState = WebSocket.CONNECTING;
     return new Promise((function(_this) {
       return function(resolve, reject) {
+        _this._webSocketResolvers = {
+          resolve: resolve,
+          reject: reject
+        };
         _this._socket = _this.webSocketFactory.create(_this.url);
         _this._socket.onopen = function() {
-          _this._open(request);
-          return resolve();
+          return _this._open(request);
         };
         return _this._socket.onclose = function() {
+          _this._webSocketResolvers = null;
           _this._connectionState = WebSocket.CLOSED;
           return reject(new Error("Unable to connect to server."));
         };
@@ -10709,7 +10713,6 @@ module.exports = Connection = (function(_super) {
   Connection.prototype._open = function(request) {
     this._socket.onclose = this._close;
     this._socket.onmessage = this._message;
-    this._connectionState = WebSocket.OPEN;
     return this.send({
       type: "handshake.request",
       version: "1.0.0",
@@ -10736,8 +10739,14 @@ module.exports = Connection = (function(_super) {
   Connection.prototype._parserMessage = function(message) {
     switch (message.type) {
       case "handshake.approve":
+        this._connectionState = WebSocket.OPEN;
+        this._webSocketResolvers.resolve(message.response);
+        this._webSocketResolvers = null;
         return this.emit("connect", message.response);
       case "handshake.reject":
+        this._connectionState = WebSocket.CLOSED;
+        this._webSocketResolvers.reject(message.reason);
+        this._webSocketResolvers = null;
         return this.emit("error", message.reason);
       default:
         return this.emit("message." + message.type, message);
