@@ -1,1 +1,4 @@
-module.exports = require('requireindex') __dirname
+module.exports =
+  error: require './error'
+  message: require './message'
+  RpcClient: require './RpcClient'

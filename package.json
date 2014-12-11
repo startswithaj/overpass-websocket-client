@@ -27,8 +27,7 @@
     "bluebird": "^2.3.11",
     "enum": "^0.2.6",
     "escape-string-regexp": "^1.0.2",
-    "node-event-emitter": "0.0.1",
-    "requireindex": "^1.1.0"
+    "node-event-emitter": "0.0.1"
   },
   "devDependencies": {
     "coffee-script": "^1.8",

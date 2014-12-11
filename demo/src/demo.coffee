@@ -1,6 +1,7 @@
-Connection = require '../../src/connection/Connection'
-Publisher = require '../../src/pubsub/Publisher'
-Subscriber = require '../../src/pubsub/Subscriber'
+overpass = require '../../src'
+Connection = overpass.connection.Connection
+Publisher = overpass.pubsub.Publisher
+Subscriber = overpass.pubsub.Subscriber
 
 $ ->
     form   = $ '#inputForm'

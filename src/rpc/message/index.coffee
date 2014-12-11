@@ -1,1 +1,4 @@
-module.exports = require('requireindex') __dirname
+module.exports =
+  Request: require './Request'
+  Response: require './Response'
+  ResponseCode: require './ResponseCode'

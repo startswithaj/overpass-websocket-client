@@ -1,1 +1,3 @@
-module.exports = require('requireindex') __dirname
+module.exports =
+  Connection: require './Connection'
+  WebSocketFactory: require './WebSocketFactory'
