@@ -1,5 +1,5 @@
 module.exports = class Request
   constructor: (@name, @arguments) ->
 
-  toString: ->
+  toString: =>
     @name + '(' + @arguments.map(JSON.stringify).join(', ') + ')'

@@ -12,15 +12,15 @@ module.exports = class RpcClient
 
         @connection.on "message.rpc.response", @_recv
 
-    invoke: (name, args...) ->
+    invoke: (name, args...) =>
         id = (++@_id).toString()
         request = new Request name, args
 
         @_send(request, id).then (response) => response.extract()
 
-    invokeArray: (name, args) -> @invoke name, args...
+    invokeArray: (name, args) => @invoke name, args...
 
-    _send: (request, id) ->
+    _send: (request, id) =>
         promise = new Promise (resolve, reject) =>
             @_requests[id] = {resolve, reject}
 
@@ -36,7 +36,7 @@ module.exports = class RpcClient
             .timeout timeout, 'RPC request timed out.'
             .finally => delete @_requests[id]
 
-    _recv: (message) ->
+    _recv: (message) =>
         return if not message.id?
 
         return if not @_requests[message.id]?

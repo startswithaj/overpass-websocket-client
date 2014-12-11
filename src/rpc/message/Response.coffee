@@ -6,7 +6,7 @@ UnknownProcedureError = require '../error/UnknownProcedureError'
 module.exports = class Response
   constructor: (@code, @value) ->
 
-  extract: ->
+  extract: =>
     return @value if @code is ResponseCode.SUCCESS
 
     if @code is ResponseCode.INVALID_MESSAGE
@@ -17,6 +17,6 @@ module.exports = class Response
 
     throw new ExecutionError @value
 
-  toString: ->
+  toString: =>
     valueString = if @code.is('SUCCESS') then JSON.stringify(@value) else @value
     @code.key + '(' + valueString + ')'

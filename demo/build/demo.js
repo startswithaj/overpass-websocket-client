@@ -10923,6 +10923,7 @@ module.exports = {
 
 },{"./Publisher":69,"./Subscriber":70}],72:[function(require,module,exports){
 var InvalidMessageError, Promise, Request, Response, ResponseCode, RpcClient, bluebird,
+  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __slice = [].slice;
 
 bluebird = require('bluebird');
@@ -10941,6 +10942,10 @@ module.exports = RpcClient = (function() {
   function RpcClient(connection, timeout) {
     this.connection = connection;
     this.timeout = timeout != null ? timeout : 10;
+    this._recv = __bind(this._recv, this);
+    this._send = __bind(this._send, this);
+    this.invokeArray = __bind(this.invokeArray, this);
+    this.invoke = __bind(this.invoke, this);
     this._requests = {};
     this._id = 0;
     this.connection.on("message.rpc.response", this._recv);
@@ -11138,12 +11143,14 @@ module.exports = {
 
 
 },{"./RpcClient":72,"./error":78,"./message":83}],80:[function(require,module,exports){
-var Request;
+var Request,
+  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
 module.exports = Request = (function() {
   function Request(name, _arguments) {
     this.name = name;
     this["arguments"] = _arguments;
+    this.toString = __bind(this.toString, this);
   }
 
   Request.prototype.toString = function() {
@@ -11157,7 +11164,8 @@ module.exports = Request = (function() {
 
 
 },{}],81:[function(require,module,exports){
-var ExecutionError, InvalidMessageError, Response, ResponseCode, UnknownProcedureError;
+var ExecutionError, InvalidMessageError, Response, ResponseCode, UnknownProcedureError,
+  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
 ExecutionError = require('../error/ExecutionError');
 
@@ -11171,6 +11179,8 @@ module.exports = Response = (function() {
   function Response(code, value) {
     this.code = code;
     this.value = value;
+    this.toString = __bind(this.toString, this);
+    this.extract = __bind(this.extract, this);
   }
 
   Response.prototype.extract = function() {
