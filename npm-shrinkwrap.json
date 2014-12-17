@@ -2,36 +2,19 @@
   "name": "overpass-websocket-client",
   "version": "0.0.0",
   "dependencies": {
-    "JSONStream": {
-      "version": "0.9.0",
-      "from": "https://registry.npmjs.org/JSONStream/-/JSONStream-0.9.0.tgz",
-      "resolved": "https://registry.npmjs.org/JSONStream/-/JSONStream-0.9.0.tgz",
-      "dependencies": {
-        "jsonparse": {
-          "version": "0.0.5",
-          "from": "https://registry.npmjs.org/jsonparse/-/jsonparse-0.0.5.tgz",
-          "resolved": "https://registry.npmjs.org/jsonparse/-/jsonparse-0.0.5.tgz"
-        },
-        "through": {
-          "version": "2.3.6",
-          "from": "https://registry.npmjs.org/through/-/through-2.3.6.tgz",
-          "resolved": "https://registry.npmjs.org/through/-/through-2.3.6.tgz"
-        }
-      }
-    },
     "bluebird": {
       "version": "2.3.11",
-      "from": "bluebird@*",
+      "from": "https://registry.npmjs.org/bluebird/-/bluebird-2.3.11.tgz",
       "resolved": "https://registry.npmjs.org/bluebird/-/bluebird-2.3.11.tgz"
     },
     "enum": {
       "version": "0.2.6",
-      "from": "enum@*",
+      "from": "https://registry.npmjs.org/enum/-/enum-0.2.6.tgz",
       "resolved": "https://registry.npmjs.org/enum/-/enum-0.2.6.tgz"
     },
     "escape-string-regexp": {
       "version": "1.0.2",
-      "from": "escape-string-regexp@*",
+      "from": "https://registry.npmjs.org/escape-string-regexp/-/escape-string-regexp-1.0.2.tgz",
       "resolved": "https://registry.npmjs.org/escape-string-regexp/-/escape-string-regexp-1.0.2.tgz"
     },
     "node-event-emitter": {
