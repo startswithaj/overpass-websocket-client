@@ -38,7 +38,7 @@ describe "connection.Connection", ->
             beforeEach (done) ->
                 @connectPromise = @subject.connect @request
                 @webSocket.onopen()
-                @webSocket.onmessage data: '[{"type":"handshake.approve","response":"responseValue"}]'
+                @webSocket.onmessage data: '{"type":"handshake.approve","response":"responseValue"}'
                 @connectPromise.then -> done()
 
             it "creates a new websocket", ->
@@ -51,7 +51,7 @@ describe "connection.Connection", ->
 
             it "sends a handshake message", ->
                 expect(@webSocket.send).toHaveBeenCalledWith \
-                  '[{"type":"handshake.request","version":"1.0.0","request":{"a":"b","c":"d"}}]'
+                  '{"type":"handshake.request","version":"1.0.0","request":{"a":"b","c":"d"}}'
 
         describe "on failure", ->
 
@@ -70,13 +70,13 @@ describe "connection.Connection", ->
             @webSocket.onopen()
 
             expect(@webSocket.send).toHaveBeenCalledWith \
-              '[{"type":"handshake.request","version":"1.0.0","request":{}}]'
+              '{"type":"handshake.request","version":"1.0.0","request":{}}'
 
         it "can connect concurrently", (done) ->
             @subject.connect @request
             @connectPromise = @subject.connect @request
             @webSocket.onopen()
-            @webSocket.onmessage data: '[{"type":"handshake.approve","response":"responseValue"}]'
+            @webSocket.onmessage data: '{"type":"handshake.approve","response":"responseValue"}'
 
             @connectPromise.then =>
                 expect(@subject._connectionState).toBe WebSocket.OPEN
@@ -85,7 +85,7 @@ describe "connection.Connection", ->
         it "can connect sequentially", (done) ->
             @connectPromise = @subject.connect @request
             @webSocket.onopen()
-            @webSocket.onmessage data: '[{"type":"handshake.approve","response":"responseValue"}]'
+            @webSocket.onmessage data: '{"type":"handshake.approve","response":"responseValue"}'
 
             @connectPromise.then =>
                 @subject.connect @request
@@ -96,7 +96,7 @@ describe "connection.Connection", ->
         it "can connect while closing", (done) ->
             @connectPromise = @subject.connect @request
             @webSocket.onopen()
-            @webSocket.onmessage data: '[{"type":"handshake.approve","response":"responseValue"}]'
+            @webSocket.onmessage data: '{"type":"handshake.approve","response":"responseValue"}'
 
             @connectPromise.then =>
                 @subject.disconnect()
@@ -104,7 +104,7 @@ describe "connection.Connection", ->
                 @webSocket.onclose code: 111, reason: 'reason'
                 setImmediate =>
                     @webSocket.onopen()
-                    @webSocket.onmessage data: '[{"type":"handshake.approve","response":"responseValue"}]'
+                    @webSocket.onmessage data: '{"type":"handshake.approve","response":"responseValue"}'
                     @connectPromise.then =>
                         expect(@subject._connectionState).toBe WebSocket.OPEN
                         done()
@@ -115,7 +115,7 @@ describe "connection.Connection", ->
                 done()
 
             @webSocket.onopen()
-            @webSocket.onmessage data: '[{"type":"handshake.reject","reason":"reasonValue"}]'
+            @webSocket.onmessage data: '{"type":"handshake.reject","reason":"reasonValue"}'
 
     describe "disconnect()", ->
 
@@ -129,7 +129,7 @@ describe "connection.Connection", ->
             beforeEach (done) ->
                 @connectPromise = @subject.connect @request
                 @webSocket.onopen()
-                @webSocket.onmessage data: '[{"type":"handshake.approve","response":"responseValue"}]'
+                @webSocket.onmessage data: '{"type":"handshake.approve","response":"responseValue"}'
                 @connectPromise.then -> done()
 
             it "can disconnect", (done) ->
@@ -166,7 +166,7 @@ describe "connection.Connection", ->
             @subject.connect @request
             @disconnectPromise = @subject.disconnect()
             @webSocket.onopen()
-            @webSocket.onmessage data: '[{"type":"handshake.approve","response":"responseValue"}]'
+            @webSocket.onmessage data: '{"type":"handshake.approve","response":"responseValue"}'
             setImmediate =>
                 @webSocket.onclose code: 111, reason: 'reason'
 
@@ -179,7 +179,7 @@ describe "connection.Connection", ->
         beforeEach (done) ->
             @connectPromise = @subject.connect @request
             @webSocket.onopen()
-            @webSocket.onmessage data: '[{"type":"handshake.approve","response":"responseValue"}]'
+            @webSocket.onmessage data: '{"type":"handshake.approve","response":"responseValue"}'
             @connectPromise.then -> done()
 
         it "handles valid messages", (done) ->
@@ -187,13 +187,13 @@ describe "connection.Connection", ->
                 expect(message).toEqual type: "a", b: ["c", "d"]
                 done()
 
-            @webSocket.onmessage data: '[{"type":"a","b":["c","d"]}]'
+            @webSocket.onmessage data: '{"type":"a","b":["c","d"]}'
 
         it "handles invalid messages", (done) ->
             @subject.on "error", (error) =>
-                expect(error.message).toEqual 'Unexpected RIGHT_BRACKET("]") in state KEY'
+                expect(error.message).toEqual 'Unexpected end of input'
                 expect(@subject._connectionState).toBe WebSocket.CLOSED
                 expect(@webSocket.close).toHaveBeenCalledWith 4001, "Invalid message received."
                 done()
 
-            @webSocket.onmessage data: '[{]'
+            @webSocket.onmessage data: '{'

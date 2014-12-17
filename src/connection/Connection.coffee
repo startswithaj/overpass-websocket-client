@@ -1,5 +1,4 @@
 EventEmitter = require "node-event-emitter"
-JSONStream = require "JSONStream"
 bluebird = require "bluebird"
 {Promise} = bluebird
 WebSocketFactory = require "./WebSocketFactory"
@@ -9,10 +8,6 @@ module.exports = class Connection extends EventEmitter
     constructor: (@url, @webSocketFactory = new WebSocketFactory()) ->
         @_connectionState = WebSocket.CLOSED
         @_socket          = null
-
-        @parser = JSONStream.parse "*"
-        @parser.on "error", @_parserError
-        @parser.on "data",  @_parserMessage
 
     connect: (request = {}) =>
         return switch @_connectionState
@@ -29,7 +24,7 @@ module.exports = class Connection extends EventEmitter
             when WebSocket.CLOSED     then bluebird.resolve()
 
     send: (message) =>
-        @_socket.send JSON.stringify [message]
+        @_socket.send JSON.stringify message
 
     _connect: (request) =>
         @_connectionState = WebSocket.CONNECTING
@@ -65,14 +60,15 @@ module.exports = class Connection extends EventEmitter
         @_socket = null
         @emit "disconnect", event.code, event.reason
 
-    _message: (event) => @parser.write event.data
+    _message: (event) =>
+        try
+            message = JSON.parse event.data
+        catch error
+            @_socket.close 4001, "Invalid message received."
+            @_connectionState = WebSocket.CLOSED
+            @emit "error", error
+            return
 
-    _parserError: (error) =>
-        @_socket.close 4001, "Invalid message received."
-        @_connectionState = WebSocket.CLOSED
-        @emit "error", error
-
-    _parserMessage: (message) =>
         switch message.type
             when "handshake.approve"
                 @_connectionState = WebSocket.OPEN
