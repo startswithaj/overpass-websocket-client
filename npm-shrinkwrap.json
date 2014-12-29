@@ -3,23 +3,23 @@
   "version": "0.0.0",
   "dependencies": {
     "bluebird": {
-      "version": "2.3.11",
-      "from": "https://registry.npmjs.org/bluebird/-/bluebird-2.3.11.tgz",
-      "resolved": "https://registry.npmjs.org/bluebird/-/bluebird-2.3.11.tgz"
+      "version": "2.5.1",
+      "from": "bluebird@>=2.3.11 <3.0.0",
+      "resolved": "https://registry.npmjs.org/bluebird/-/bluebird-2.5.1.tgz"
     },
     "enum": {
       "version": "0.2.6",
-      "from": "https://registry.npmjs.org/enum/-/enum-0.2.6.tgz",
+      "from": "enum@>=0.2.6 <0.3.0",
       "resolved": "https://registry.npmjs.org/enum/-/enum-0.2.6.tgz"
     },
     "escape-string-regexp": {
       "version": "1.0.2",
-      "from": "https://registry.npmjs.org/escape-string-regexp/-/escape-string-regexp-1.0.2.tgz",
+      "from": "escape-string-regexp@>=1.0.2 <2.0.0",
       "resolved": "https://registry.npmjs.org/escape-string-regexp/-/escape-string-regexp-1.0.2.tgz"
     },
     "node-event-emitter": {
       "version": "0.0.1",
-      "from": "https://registry.npmjs.org/node-event-emitter/-/node-event-emitter-0.0.1.tgz",
+      "from": "node-event-emitter@0.0.1",
       "resolved": "https://registry.npmjs.org/node-event-emitter/-/node-event-emitter-0.0.1.tgz"
     }
   }
