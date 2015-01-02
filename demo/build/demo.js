@@ -6204,7 +6204,7 @@ module.exports = {
 
 
 
-},{"./connection":44,"./pubsub":48,"./rpc":56}],46:[function(require,module,exports){
+},{"./connection":44,"./pubsub":49,"./rpc":57}],46:[function(require,module,exports){
 var Publisher,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -6333,6 +6333,107 @@ module.exports = Subscriber = (function(_super) {
 
 
 },{"escape-string-regexp":39,"node-event-emitter":41}],48:[function(require,module,exports){
+var EventEmitter, Promise, Subscription, bluebird, regexEscape,
+  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+bluebird = require("bluebird");
+
+EventEmitter = require("node-event-emitter");
+
+regexEscape = require("escape-string-regexp");
+
+Promise = require("bluebird").Promise;
+
+module.exports = Subscription = (function(_super) {
+  __extends(Subscription, _super);
+
+  function Subscription(connection, topic, id, timeout) {
+    var atom, atoms;
+    this.connection = connection;
+    this.topic = topic;
+    this.id = id;
+    this.timeout = timeout != null ? timeout : 10;
+    this._publish = __bind(this._publish, this);
+    this._unsubscribe = __bind(this._unsubscribe, this);
+    this._subscribed = __bind(this._subscribed, this);
+    this._subscribe = __bind(this._subscribe, this);
+    this._subscriber = bluebird.resolve();
+    atoms = (function() {
+      var _i, _len, _ref, _results;
+      _ref = topic.split(".");
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        atom = _ref[_i];
+        switch (atom) {
+          case "*":
+            _results.push("(.+)");
+            break;
+          case "?":
+            _results.push("([^.]+)");
+            break;
+          default:
+            _results.push(regexEscape(atom));
+        }
+      }
+      return _results;
+    })();
+    this._pattern = new RegExp("^" + (atoms.join(regexEscape("."))) + "$");
+    this.connection.on("message.pubsub.subscribed", this._subscribed);
+    this.connection.on("message.pubsub.publish", this._publish);
+  }
+
+  Subscription.prototype.enable = function() {
+    return this._subscriber = this._subscriber.then(this._subscribe, this._subscribe);
+  };
+
+  Subscription.prototype.disable = function() {
+    return this._subscriber = this._subscriber.then(this._unsubscribe, this._unsubscribe);
+  };
+
+  Subscription.prototype._subscribe = function() {
+    var promise, timeout;
+    promise = new Promise((function(_this) {
+      return function(resolve) {
+        return _this._resolve = resolve;
+      };
+    })(this));
+    this.connection.send({
+      type: "pubsub.subscribe",
+      id: this.id,
+      topic: this.topic
+    });
+    timeout = Math.round(this.timeout * 1000);
+    return promise.timeout(timeout, "Subscription request timed out.");
+  };
+
+  Subscription.prototype._subscribed = function(message) {
+    if (message.id === this.id) {
+      return this._resolve();
+    }
+  };
+
+  Subscription.prototype._unsubscribe = function() {
+    return this.connection.send({
+      type: "pubsub.unsubscribe",
+      id: this.id
+    });
+  };
+
+  Subscription.prototype._publish = function(message) {
+    if (this._pattern.test(message.topic)) {
+      return this.emit("message", message.topic, message.payload);
+    }
+  };
+
+  return Subscription;
+
+})(EventEmitter);
+
+
+
+},{"bluebird":4,"escape-string-regexp":39,"node-event-emitter":41}],49:[function(require,module,exports){
 module.exports = {
   Publisher: require('./Publisher'),
   Subscriber: require('./Subscriber')
@@ -6340,7 +6441,7 @@ module.exports = {
 
 
 
-},{"./Publisher":46,"./Subscriber":47}],49:[function(require,module,exports){
+},{"./Publisher":46,"./Subscriber":47}],50:[function(require,module,exports){
 var InvalidMessageError, Promise, Request, Response, ResponseCode, RpcClient, bluebird,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __slice = [].slice;
@@ -6437,7 +6538,7 @@ module.exports = RpcClient = (function() {
 
 
 
-},{"./error/InvalidMessageError":52,"./message/Request":57,"./message/Response":58,"./message/ResponseCode":59,"bluebird":4}],50:[function(require,module,exports){
+},{"./error/InvalidMessageError":53,"./message/Request":58,"./message/Response":59,"./message/ResponseCode":60,"bluebird":4}],51:[function(require,module,exports){
 var ExecutionError, ResponseCode,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6458,7 +6559,7 @@ module.exports = ExecutionError = (function(_super) {
 
 
 
-},{"../message/ResponseCode":59}],51:[function(require,module,exports){
+},{"../message/ResponseCode":60}],52:[function(require,module,exports){
 var InvalidArgumentsError, ResponseCode,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6479,7 +6580,7 @@ module.exports = InvalidArgumentsError = (function(_super) {
 
 
 
-},{"../message/ResponseCode":59}],52:[function(require,module,exports){
+},{"../message/ResponseCode":60}],53:[function(require,module,exports){
 var InvalidMessageError, ResponseCode,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6500,7 +6601,7 @@ module.exports = InvalidMessageError = (function(_super) {
 
 
 
-},{"../message/ResponseCode":59}],53:[function(require,module,exports){
+},{"../message/ResponseCode":60}],54:[function(require,module,exports){
 var TimeoutError,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6519,7 +6620,7 @@ module.exports = TimeoutError = (function(_super) {
 
 
 
-},{}],54:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 var ResponseCode, UnknownProcedureError,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6541,7 +6642,7 @@ module.exports = UnknownProcedureError = (function(_super) {
 
 
 
-},{"../message/ResponseCode":59}],55:[function(require,module,exports){
+},{"../message/ResponseCode":60}],56:[function(require,module,exports){
 module.exports = {
   ExecutionError: require('./ExecutionError'),
   InvalidArgumentsError: require('./InvalidArgumentsError'),
@@ -6552,7 +6653,7 @@ module.exports = {
 
 
 
-},{"./ExecutionError":50,"./InvalidArgumentsError":51,"./InvalidMessageError":52,"./TimeoutError":53,"./UnknownProcedureError":54}],56:[function(require,module,exports){
+},{"./ExecutionError":51,"./InvalidArgumentsError":52,"./InvalidMessageError":53,"./TimeoutError":54,"./UnknownProcedureError":55}],57:[function(require,module,exports){
 module.exports = {
   error: require('./error'),
   message: require('./message'),
@@ -6561,7 +6662,7 @@ module.exports = {
 
 
 
-},{"./RpcClient":49,"./error":55,"./message":60}],57:[function(require,module,exports){
+},{"./RpcClient":50,"./error":56,"./message":61}],58:[function(require,module,exports){
 var Request,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -6582,7 +6683,7 @@ module.exports = Request = (function() {
 
 
 
-},{}],58:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 var ExecutionError, InvalidMessageError, Response, ResponseCode, UnknownProcedureError,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -6627,7 +6728,7 @@ module.exports = Response = (function() {
 
 
 
-},{"../error/ExecutionError":50,"../error/InvalidMessageError":52,"../error/UnknownProcedureError":54,"./ResponseCode":59}],59:[function(require,module,exports){
+},{"../error/ExecutionError":51,"../error/InvalidMessageError":53,"../error/UnknownProcedureError":55,"./ResponseCode":60}],60:[function(require,module,exports){
 var Enum;
 
 Enum = require('enum');
@@ -6642,7 +6743,7 @@ module.exports = new Enum({
 
 
 
-},{"enum":37}],60:[function(require,module,exports){
+},{"enum":37}],61:[function(require,module,exports){
 module.exports = {
   Request: require('./Request'),
   Response: require('./Response'),
@@ -6651,4 +6752,4 @@ module.exports = {
 
 
 
-},{"./Request":57,"./Response":58,"./ResponseCode":59}]},{},[42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,1]);
+},{"./Request":58,"./Response":59,"./ResponseCode":60}]},{},[42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,1]);
