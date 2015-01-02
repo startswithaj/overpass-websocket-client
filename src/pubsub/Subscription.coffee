@@ -8,6 +8,7 @@ module.exports = class Subscription extends EventEmitter
 
     constructor: (@connection, @topic, @id, @timeout = 10) ->
         @_subscriber = bluebird.resolve()
+        @_isSubscribed = false
 
         atoms = for atom in topic.split "."
             switch atom
@@ -25,6 +26,10 @@ module.exports = class Subscription extends EventEmitter
     disable: -> @_subscriber = @_subscriber.then @_unsubscribe, @_unsubscribe
 
     _subscribe: =>
+        return bluebird.resolve() if @_isSubscribed
+
+        @_isSubscribed = true
+
         promise = new Promise (resolve) => @_resolve = resolve
 
         @connection.on "message.pubsub.subscribed", @_subscribed
@@ -44,6 +49,10 @@ module.exports = class Subscription extends EventEmitter
     _subscribed: (message) => @_resolve() if message.id is @id
 
     _unsubscribe: =>
+        return bluebird.resolve() unless @_isSubscribed
+
+        @_isSubscribed = false
+
         @connection.send type: "pubsub.unsubscribe", id: @id
         @connection.removeListener "message.pubsub.subscribed", @_subscribed
         @connection.removeListener "message.pubsub.publish", @_publish

@@ -28,8 +28,7 @@ describe "pubsub.Subscription", ->
                 expect(@connection.send).toHaveBeenCalledWith type: "pubsub.subscribe", id: @_id, topic: @topic
                 done()
 
-            setImmediate =>
-                @subject._subscribed id: @_id
+            setImmediate => @subject._subscribed id: @_id
 
         it "listens to the appropriate messages", (done) ->
             @subject.enable().then =>
@@ -37,8 +36,7 @@ describe "pubsub.Subscription", ->
                 expect(@connection.on).toHaveBeenCalledWith "message.pubsub.publish", @subject._publish
                 done()
 
-            setImmediate =>
-                @subject._subscribed id: @_id
+            setImmediate => @subject._subscribed id: @_id
 
         it "honors the timeout", (done) ->
             @subject.timeout = .001
@@ -53,6 +51,16 @@ describe "pubsub.Subscription", ->
                 @subject._subscribed id: 123
                 @subject._subscribed id: @_id
 
+        it "only subscribes once", (done) ->
+            @subject.enable()
+            .then =>
+                @subject.enable()
+            .then =>
+                expect(@connection.send.calls.length).toBe 1
+                done()
+
+            setImmediate => @subject._subscribed id: @_id
+
     describe "disable()", ->
 
         it "unsubscribes from the appropriate ID", (done) ->
@@ -63,8 +71,7 @@ describe "pubsub.Subscription", ->
                 expect(@connection.send).toHaveBeenCalledWith type: "pubsub.unsubscribe", id: @_id
                 done()
 
-            setImmediate =>
-                @subject._subscribed id: @_id
+            setImmediate => @subject._subscribed id: @_id
 
         it "removes the message event listeners", (done) ->
             @subject.enable()
@@ -77,8 +84,19 @@ describe "pubsub.Subscription", ->
                 expect(@connection.removeListener).toHaveBeenCalledWith "message.pubsub.publish", @subject._publish
                 done()
 
-            setImmediate =>
-                @subject._subscribed id: @_id
+            setImmediate => @subject._subscribed id: @_id
+
+        it "only unsubscribes once", (done) ->
+            @subject.enable()
+            .then =>
+                @subject.disable()
+            .then =>
+                @subject.disable()
+            .then =>
+                expect(@connection.send.calls.length).toBe 2
+                done()
+
+            setImmediate => @subject._subscribed id: @_id
 
     describe "_publish()", ->
 
