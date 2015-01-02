@@ -4,7 +4,7 @@ Subscription = requireHelper "pubsub/Subscription"
 describe "pubsub.Subscription", ->
 
     beforeEach ->
-        @connection = jasmine.createSpyObj "connection", ["on", "send"]
+        @connection = jasmine.createSpyObj "connection", ["on", "removeListener", "send"]
         @topic = "a.*.b.?.c"
         @_id = 111
         @timeout = 222
@@ -21,17 +21,20 @@ describe "pubsub.Subscription", ->
 
         expect(@subject.timeout).toBe 10
 
-    describe "constructor()", ->
-
-        it "listens to the appropriate messages", ->
-            expect(@connection.on).toHaveBeenCalledWith "message.pubsub.subscribed", @subject._subscribed
-            expect(@connection.on).toHaveBeenCalledWith "message.pubsub.publish", @subject._publish
-
     describe "enable()", ->
 
         it "subscribes to the appropriate topic", (done) ->
             @subject.enable().then =>
                 expect(@connection.send).toHaveBeenCalledWith type: "pubsub.subscribe", id: @_id, topic: @topic
+                done()
+
+            setImmediate =>
+                @subject._subscribed id: @_id
+
+        it "listens to the appropriate messages", (done) ->
+            @subject.enable().then =>
+                expect(@connection.on).toHaveBeenCalledWith "message.pubsub.subscribed", @subject._subscribed
+                expect(@connection.on).toHaveBeenCalledWith "message.pubsub.publish", @subject._publish
                 done()
 
             setImmediate =>
@@ -58,6 +61,20 @@ describe "pubsub.Subscription", ->
                 @subject.disable()
             .then =>
                 expect(@connection.send).toHaveBeenCalledWith type: "pubsub.unsubscribe", id: @_id
+                done()
+
+            setImmediate =>
+                @subject._subscribed id: @_id
+
+        it "removes the message event listeners", (done) ->
+            @subject.enable()
+            .then =>
+                @subject.disable()
+            .then =>
+                expect(@connection.removeListener).toHaveBeenCalledWith \
+                    "message.pubsub.subscribed",
+                    @subject._subscribed
+                expect(@connection.removeListener).toHaveBeenCalledWith "message.pubsub.publish", @subject._publish
                 done()
 
             setImmediate =>

@@ -6229,111 +6229,30 @@ module.exports = Publisher = (function() {
 
 
 },{}],47:[function(require,module,exports){
-var EventEmitter, Subscriber, regexEscape,
-  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+var Subscriber, Subscription,
+  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-EventEmitter = require("node-event-emitter");
+Subscription = require("./Subscription");
 
-regexEscape = require("escape-string-regexp");
-
-module.exports = Subscriber = (function(_super) {
-  __extends(Subscriber, _super);
-
+module.exports = Subscriber = (function() {
   function Subscriber(connection) {
     this.connection = connection;
-    this._onRemoveListener = __bind(this._onRemoveListener, this);
-    this._onNewListener = __bind(this._onNewListener, this);
-    this._publish = __bind(this._publish, this);
-    this.unsubscribe = __bind(this.unsubscribe, this);
-    this.subscribe = __bind(this.subscribe, this);
-    this._wildcardListeners = {};
-    this.on("newListener", this._onNewListener);
-    this.on("removeListener", this._onRemoveListener);
-    this.connection.on("message.pubsub.publish", this._publish);
+    this.create = __bind(this.create, this);
+    this._id = 0;
   }
 
-  Subscriber.prototype.subscribe = function(topic) {
-    return this.connection.send({
-      type: "pubsub.subscribe",
-      topic: topic
-    });
-  };
-
-  Subscriber.prototype.unsubscribe = function(topic) {
-    return this.connection.send({
-      type: "pubsub.unsubscribe",
-      topic: topic
-    });
-  };
-
-  Subscriber.prototype._publish = function(message) {
-    var event, regex, _ref, _results;
-    this.emit("message", message.topic, message.payload);
-    this.emit("message." + message.topic, message.topic, message.payload);
-    _ref = this._wildcardListeners;
-    _results = [];
-    for (event in _ref) {
-      regex = _ref[event];
-      if (regex.test(message.topic)) {
-        _results.push(this.emit(event, message.topic, message.payload));
-      } else {
-        _results.push(void 0);
-      }
-    }
-    return _results;
-  };
-
-  Subscriber.prototype._onNewListener = function(event, listener) {
-    var atom, atoms, isPattern;
-    if (event in this._wildcardListeners) {
-      return;
-    }
-    atoms = event.split(".");
-    if (atoms.shift() !== "message") {
-      return;
-    }
-    isPattern = false;
-    atoms = (function() {
-      var _i, _len, _results;
-      _results = [];
-      for (_i = 0, _len = atoms.length; _i < _len; _i++) {
-        atom = atoms[_i];
-        switch (atom) {
-          case "*":
-            isPattern = true;
-            _results.push("(.+)");
-            break;
-          case "?":
-            isPattern = true;
-            _results.push("([^.]+)");
-            break;
-          default:
-            _results.push(regexEscape(atom));
-        }
-      }
-      return _results;
-    })();
-    if (isPattern) {
-      return this._wildcardListeners[event] = new RegExp("^" + (atoms.join(regexEscape("."))) + "$");
-    }
-  };
-
-  Subscriber.prototype._onRemoveListener = function(event, listener) {
-    if (!EventEmitter.listenerCount(this, event)) {
-      return delete this._wildcardListeners[event];
-    }
+  Subscriber.prototype.create = function(topic) {
+    return new Subscription(this.connection, topic, ++this._id);
   };
 
   return Subscriber;
 
-})(EventEmitter);
+})();
 
 
 
-},{"escape-string-regexp":39,"node-event-emitter":41}],48:[function(require,module,exports){
-var EventEmitter, Promise, Subscription, bluebird, regexEscape,
+},{"./Subscription":48}],48:[function(require,module,exports){
+var EventEmitter, Promise, Subscription, TimeoutError, bluebird, regexEscape,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6345,6 +6264,8 @@ EventEmitter = require("node-event-emitter");
 regexEscape = require("escape-string-regexp");
 
 Promise = require("bluebird").Promise;
+
+TimeoutError = require("bluebird").TimeoutError;
 
 module.exports = Subscription = (function(_super) {
   __extends(Subscription, _super);
@@ -6380,8 +6301,6 @@ module.exports = Subscription = (function(_super) {
       return _results;
     })();
     this._pattern = new RegExp("^" + (atoms.join(regexEscape("."))) + "$");
-    this.connection.on("message.pubsub.subscribed", this._subscribed);
-    this.connection.on("message.pubsub.publish", this._publish);
   }
 
   Subscription.prototype.enable = function() {
@@ -6399,13 +6318,21 @@ module.exports = Subscription = (function(_super) {
         return _this._resolve = resolve;
       };
     })(this));
+    this.connection.on("message.pubsub.subscribed", this._subscribed);
+    this.connection.on("message.pubsub.publish", this._publish);
     this.connection.send({
       type: "pubsub.subscribe",
       id: this.id,
       topic: this.topic
     });
     timeout = Math.round(this.timeout * 1000);
-    return promise.timeout(timeout, "Subscription request timed out.");
+    return promise.timeout(timeout, "Subscription request timed out.")["catch"](TimeoutError, (function(_this) {
+      return function(error) {
+        _this.connection.removeListener("message.pubsub.subscribed", _this._subscribed);
+        _this.connection.removeListener("message.pubsub.publish", _this._publish);
+        throw error;
+      };
+    })(this));
   };
 
   Subscription.prototype._subscribed = function(message) {
@@ -6415,10 +6342,12 @@ module.exports = Subscription = (function(_super) {
   };
 
   Subscription.prototype._unsubscribe = function() {
-    return this.connection.send({
+    this.connection.send({
       type: "pubsub.unsubscribe",
       id: this.id
     });
+    this.connection.removeListener("message.pubsub.subscribed", this._subscribed);
+    return this.connection.removeListener("message.pubsub.publish", this._publish);
   };
 
   Subscription.prototype._publish = function(message) {
