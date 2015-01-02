@@ -1,7 +1,7 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 var Connection, Publisher, Subscriber, overpass;
 
-overpass = require('../../src');
+overpass = require("../../src");
 
 Connection = overpass.connection.Connection;
 
@@ -11,29 +11,26 @@ Subscriber = overpass.pubsub.Subscriber;
 
 $(function() {
   var connect, connection, form, input, output, print, publisher, reconnect, subscriber;
-  form = $('#inputForm');
-  input = $('#input');
-  output = $('#output');
-  connection = new Connection('ws://192.168.60.36:8765');
+  form = $("#inputForm");
+  input = $("#input");
+  output = $("#output");
+  connection = new Connection("ws://localhost:8765");
   publisher = new Publisher(connection);
   subscriber = new Subscriber(connection);
-  subscriber.on('message', function(topic, payload) {
-    return print("<" + topic + "> " + (JSON.stringify(payload)));
-  });
   print = function(text) {
     var div;
-    div = $('<div>');
+    div = $("<div>");
     div.text(text);
     output.append(div);
     output.scrollTop(output[0].scrollHeight);
-    if (output.find('*').length > 50) {
-      return output.find(':first-child').remove();
+    if (output.find("*").length > 50) {
+      return output.find(":first-child").remove();
     }
   };
   connect = function() {
-    print('* connecting');
+    print("* connecting");
     return connection.connect({
-      foo: 'bar'
+      foo: "bar"
     });
   };
   reconnect = function() {
@@ -41,24 +38,29 @@ $(function() {
     return setTimeout(connect, 5000);
   };
   input.focus();
-  connection.on('connect', function() {
-    print('* connected');
-    return subscriber.subscribe('*');
+  connection.on("connect", function() {
+    var subscription;
+    print("* connected");
+    subscription = subscriber.subscribe("*");
+    subscription.on("message", function(topic, payload) {
+      return print("<" + topic + "> " + (JSON.stringify(payload)));
+    });
+    return subscription.enable();
   });
-  connection.on('error', function(message) {
+  connection.on("error", function(message) {
     print("* error: " + message);
     return reconnect();
   });
-  connection.on('disconnect', function(code, reason) {
+  connection.on("disconnect", function(code, reason) {
     print("* disconnected: " + code + " " + reason);
     return reconnect();
   });
   form.submit(function(e) {
     e.preventDefault();
-    publisher.publish('websocket', {
+    publisher.publish("websocket", {
       text: input.val()
     });
-    return input.val('');
+    return input.val("");
   });
   return connect();
 });
@@ -6204,7 +6206,7 @@ module.exports = {
 
 
 
-},{"./connection":44,"./pubsub":48,"./rpc":56}],46:[function(require,module,exports){
+},{"./connection":44,"./pubsub":49,"./rpc":57}],46:[function(require,module,exports){
 var Publisher,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -6229,84 +6231,69 @@ module.exports = Publisher = (function() {
 
 
 },{}],47:[function(require,module,exports){
-var EventEmitter, Subscriber, regexEscape,
+var Subscriber, Subscription,
+  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+Subscription = require("./Subscription");
+
+module.exports = Subscriber = (function() {
+  function Subscriber(connection) {
+    this.connection = connection;
+    this.subscribe = __bind(this.subscribe, this);
+    this._id = 0;
+  }
+
+  Subscriber.prototype.subscribe = function(topic) {
+    return new Subscription(this.connection, topic, ++this._id);
+  };
+
+  return Subscriber;
+
+})();
+
+
+
+},{"./Subscription":48}],48:[function(require,module,exports){
+var EventEmitter, Promise, Subscription, TimeoutError, bluebird, regexEscape,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+bluebird = require("bluebird");
 
 EventEmitter = require("node-event-emitter");
 
 regexEscape = require("escape-string-regexp");
 
-module.exports = Subscriber = (function(_super) {
-  __extends(Subscriber, _super);
+Promise = require("bluebird").Promise;
 
-  function Subscriber(connection) {
+TimeoutError = require("bluebird").TimeoutError;
+
+module.exports = Subscription = (function(_super) {
+  __extends(Subscription, _super);
+
+  function Subscription(connection, topic, id, timeout) {
+    var atom, atoms;
     this.connection = connection;
-    this._onRemoveListener = __bind(this._onRemoveListener, this);
-    this._onNewListener = __bind(this._onNewListener, this);
+    this.topic = topic;
+    this.id = id;
+    this.timeout = timeout != null ? timeout : 10;
     this._publish = __bind(this._publish, this);
-    this.unsubscribe = __bind(this.unsubscribe, this);
-    this.subscribe = __bind(this.subscribe, this);
-    this._wildcardListeners = {};
-    this.on("newListener", this._onNewListener);
-    this.on("removeListener", this._onRemoveListener);
-    this.connection.on("message.pubsub.publish", this._publish);
-  }
-
-  Subscriber.prototype.subscribe = function(topic) {
-    return this.connection.send({
-      type: "pubsub.subscribe",
-      topic: topic
-    });
-  };
-
-  Subscriber.prototype.unsubscribe = function(topic) {
-    return this.connection.send({
-      type: "pubsub.unsubscribe",
-      topic: topic
-    });
-  };
-
-  Subscriber.prototype._publish = function(message) {
-    var event, regex, _ref, _results;
-    this.emit("message", message.topic, message.payload);
-    this.emit("message." + message.topic, message.topic, message.payload);
-    _ref = this._wildcardListeners;
-    _results = [];
-    for (event in _ref) {
-      regex = _ref[event];
-      if (regex.test(message.topic)) {
-        _results.push(this.emit(event, message.topic, message.payload));
-      } else {
-        _results.push(void 0);
-      }
-    }
-    return _results;
-  };
-
-  Subscriber.prototype._onNewListener = function(event, listener) {
-    var atom, atoms, isPattern;
-    if (event in this._wildcardListeners) {
-      return;
-    }
-    atoms = event.split(".");
-    if (atoms.shift() !== "message") {
-      return;
-    }
-    isPattern = false;
+    this._unsubscribe = __bind(this._unsubscribe, this);
+    this._subscribed = __bind(this._subscribed, this);
+    this._subscribe = __bind(this._subscribe, this);
+    this._subscriber = bluebird.resolve();
     atoms = (function() {
-      var _i, _len, _results;
+      var _i, _len, _ref, _results;
+      _ref = topic.split(".");
       _results = [];
-      for (_i = 0, _len = atoms.length; _i < _len; _i++) {
-        atom = atoms[_i];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        atom = _ref[_i];
         switch (atom) {
           case "*":
-            isPattern = true;
             _results.push("(.+)");
             break;
           case "?":
-            isPattern = true;
             _results.push("([^.]+)");
             break;
           default:
@@ -6315,24 +6302,69 @@ module.exports = Subscriber = (function(_super) {
       }
       return _results;
     })();
-    if (isPattern) {
-      return this._wildcardListeners[event] = new RegExp("^" + (atoms.join(regexEscape("."))) + "$");
+    this._pattern = new RegExp("^" + (atoms.join(regexEscape("."))) + "$");
+  }
+
+  Subscription.prototype.enable = function() {
+    return this._subscriber = this._subscriber.then(this._subscribe, this._subscribe);
+  };
+
+  Subscription.prototype.disable = function() {
+    return this._subscriber = this._subscriber.then(this._unsubscribe, this._unsubscribe);
+  };
+
+  Subscription.prototype._subscribe = function() {
+    var promise, timeout;
+    promise = new Promise((function(_this) {
+      return function(resolve) {
+        return _this._resolve = resolve;
+      };
+    })(this));
+    this.connection.on("message.pubsub.subscribed", this._subscribed);
+    this.connection.on("message.pubsub.publish", this._publish);
+    this.connection.send({
+      type: "pubsub.subscribe",
+      id: this.id,
+      topic: this.topic
+    });
+    timeout = Math.round(this.timeout * 1000);
+    return promise.timeout(timeout, "Subscription request timed out.")["catch"](TimeoutError, (function(_this) {
+      return function(error) {
+        _this.connection.removeListener("message.pubsub.subscribed", _this._subscribed);
+        _this.connection.removeListener("message.pubsub.publish", _this._publish);
+        throw error;
+      };
+    })(this));
+  };
+
+  Subscription.prototype._subscribed = function(message) {
+    if (message.id === this.id) {
+      return this._resolve();
     }
   };
 
-  Subscriber.prototype._onRemoveListener = function(event, listener) {
-    if (!EventEmitter.listenerCount(this, event)) {
-      return delete this._wildcardListeners[event];
+  Subscription.prototype._unsubscribe = function() {
+    this.connection.send({
+      type: "pubsub.unsubscribe",
+      id: this.id
+    });
+    this.connection.removeListener("message.pubsub.subscribed", this._subscribed);
+    return this.connection.removeListener("message.pubsub.publish", this._publish);
+  };
+
+  Subscription.prototype._publish = function(message) {
+    if (this._pattern.test(message.topic)) {
+      return this.emit("message", message.topic, message.payload);
     }
   };
 
-  return Subscriber;
+  return Subscription;
 
 })(EventEmitter);
 
 
 
-},{"escape-string-regexp":39,"node-event-emitter":41}],48:[function(require,module,exports){
+},{"bluebird":4,"escape-string-regexp":39,"node-event-emitter":41}],49:[function(require,module,exports){
 module.exports = {
   Publisher: require('./Publisher'),
   Subscriber: require('./Subscriber')
@@ -6340,7 +6372,7 @@ module.exports = {
 
 
 
-},{"./Publisher":46,"./Subscriber":47}],49:[function(require,module,exports){
+},{"./Publisher":46,"./Subscriber":47}],50:[function(require,module,exports){
 var InvalidMessageError, Promise, Request, Response, ResponseCode, RpcClient, bluebird,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __slice = [].slice;
@@ -6437,7 +6469,7 @@ module.exports = RpcClient = (function() {
 
 
 
-},{"./error/InvalidMessageError":52,"./message/Request":57,"./message/Response":58,"./message/ResponseCode":59,"bluebird":4}],50:[function(require,module,exports){
+},{"./error/InvalidMessageError":53,"./message/Request":58,"./message/Response":59,"./message/ResponseCode":60,"bluebird":4}],51:[function(require,module,exports){
 var ExecutionError, ResponseCode,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6458,7 +6490,7 @@ module.exports = ExecutionError = (function(_super) {
 
 
 
-},{"../message/ResponseCode":59}],51:[function(require,module,exports){
+},{"../message/ResponseCode":60}],52:[function(require,module,exports){
 var InvalidArgumentsError, ResponseCode,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6479,7 +6511,7 @@ module.exports = InvalidArgumentsError = (function(_super) {
 
 
 
-},{"../message/ResponseCode":59}],52:[function(require,module,exports){
+},{"../message/ResponseCode":60}],53:[function(require,module,exports){
 var InvalidMessageError, ResponseCode,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6500,7 +6532,7 @@ module.exports = InvalidMessageError = (function(_super) {
 
 
 
-},{"../message/ResponseCode":59}],53:[function(require,module,exports){
+},{"../message/ResponseCode":60}],54:[function(require,module,exports){
 var TimeoutError,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6519,7 +6551,7 @@ module.exports = TimeoutError = (function(_super) {
 
 
 
-},{}],54:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 var ResponseCode, UnknownProcedureError,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6541,7 +6573,7 @@ module.exports = UnknownProcedureError = (function(_super) {
 
 
 
-},{"../message/ResponseCode":59}],55:[function(require,module,exports){
+},{"../message/ResponseCode":60}],56:[function(require,module,exports){
 module.exports = {
   ExecutionError: require('./ExecutionError'),
   InvalidArgumentsError: require('./InvalidArgumentsError'),
@@ -6552,7 +6584,7 @@ module.exports = {
 
 
 
-},{"./ExecutionError":50,"./InvalidArgumentsError":51,"./InvalidMessageError":52,"./TimeoutError":53,"./UnknownProcedureError":54}],56:[function(require,module,exports){
+},{"./ExecutionError":51,"./InvalidArgumentsError":52,"./InvalidMessageError":53,"./TimeoutError":54,"./UnknownProcedureError":55}],57:[function(require,module,exports){
 module.exports = {
   error: require('./error'),
   message: require('./message'),
@@ -6561,7 +6593,7 @@ module.exports = {
 
 
 
-},{"./RpcClient":49,"./error":55,"./message":60}],57:[function(require,module,exports){
+},{"./RpcClient":50,"./error":56,"./message":61}],58:[function(require,module,exports){
 var Request,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -6582,7 +6614,7 @@ module.exports = Request = (function() {
 
 
 
-},{}],58:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 var ExecutionError, InvalidMessageError, Response, ResponseCode, UnknownProcedureError,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -6627,7 +6659,7 @@ module.exports = Response = (function() {
 
 
 
-},{"../error/ExecutionError":50,"../error/InvalidMessageError":52,"../error/UnknownProcedureError":54,"./ResponseCode":59}],59:[function(require,module,exports){
+},{"../error/ExecutionError":51,"../error/InvalidMessageError":53,"../error/UnknownProcedureError":55,"./ResponseCode":60}],60:[function(require,module,exports){
 var Enum;
 
 Enum = require('enum');
@@ -6642,7 +6674,7 @@ module.exports = new Enum({
 
 
 
-},{"enum":37}],60:[function(require,module,exports){
+},{"enum":37}],61:[function(require,module,exports){
 module.exports = {
   Request: require('./Request'),
   Response: require('./Response'),
@@ -6651,4 +6683,4 @@ module.exports = {
 
 
 
-},{"./Request":57,"./Response":58,"./ResponseCode":59}]},{},[42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,1]);
+},{"./Request":58,"./Response":59,"./ResponseCode":60}]},{},[42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,1]);
