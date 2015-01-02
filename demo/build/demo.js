@@ -1,7 +1,7 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 var Connection, Publisher, Subscriber, overpass;
 
-overpass = require('../../src');
+overpass = require("../../src");
 
 Connection = overpass.connection.Connection;
 
@@ -11,29 +11,26 @@ Subscriber = overpass.pubsub.Subscriber;
 
 $(function() {
   var connect, connection, form, input, output, print, publisher, reconnect, subscriber;
-  form = $('#inputForm');
-  input = $('#input');
-  output = $('#output');
-  connection = new Connection('ws://192.168.60.36:8765');
+  form = $("#inputForm");
+  input = $("#input");
+  output = $("#output");
+  connection = new Connection("ws://localhost:8765");
   publisher = new Publisher(connection);
   subscriber = new Subscriber(connection);
-  subscriber.on('message', function(topic, payload) {
-    return print("<" + topic + "> " + (JSON.stringify(payload)));
-  });
   print = function(text) {
     var div;
-    div = $('<div>');
+    div = $("<div>");
     div.text(text);
     output.append(div);
     output.scrollTop(output[0].scrollHeight);
-    if (output.find('*').length > 50) {
-      return output.find(':first-child').remove();
+    if (output.find("*").length > 50) {
+      return output.find(":first-child").remove();
     }
   };
   connect = function() {
-    print('* connecting');
+    print("* connecting");
     return connection.connect({
-      foo: 'bar'
+      foo: "bar"
     });
   };
   reconnect = function() {
@@ -41,24 +38,29 @@ $(function() {
     return setTimeout(connect, 5000);
   };
   input.focus();
-  connection.on('connect', function() {
-    print('* connected');
-    return subscriber.subscribe('*');
+  connection.on("connect", function() {
+    var subscription;
+    print("* connected");
+    subscription = subscriber.subscribe("*");
+    subscription.on("message", function(topic, payload) {
+      return print("<" + topic + "> " + (JSON.stringify(payload)));
+    });
+    return subscription.enable();
   });
-  connection.on('error', function(message) {
+  connection.on("error", function(message) {
     print("* error: " + message);
     return reconnect();
   });
-  connection.on('disconnect', function(code, reason) {
+  connection.on("disconnect", function(code, reason) {
     print("* disconnected: " + code + " " + reason);
     return reconnect();
   });
   form.submit(function(e) {
     e.preventDefault();
-    publisher.publish('websocket', {
+    publisher.publish("websocket", {
       text: input.val()
     });
-    return input.val('');
+    return input.val("");
   });
   return connect();
 });
@@ -6237,11 +6239,11 @@ Subscription = require("./Subscription");
 module.exports = Subscriber = (function() {
   function Subscriber(connection) {
     this.connection = connection;
-    this.create = __bind(this.create, this);
+    this.subscribe = __bind(this.subscribe, this);
     this._id = 0;
   }
 
-  Subscriber.prototype.create = function(topic) {
+  Subscriber.prototype.subscribe = function(topic) {
     return new Subscription(this.connection, topic, ++this._id);
   };
 

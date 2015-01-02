@@ -11,20 +11,20 @@ describe "pubsub.Subscriber", ->
     it "stores the supplied dependencies", ->
         expect(@subject.connection).toBe @connection
 
-    describe "create()", ->
+    describe "subscribe()", ->
 
         it "creates subscriptions with the correct topic", ->
-            @subscription = @subject.create "topic"
+            @subscription = @subject.subscribe "topic"
 
             expect(@subscription.topic).toBe "topic"
 
         it "passes the corret dependencies", ->
-            @subscription = @subject.create "topic"
+            @subscription = @subject.subscribe "topic"
 
             expect(@subscription.connection).toBe @connection
 
         it "creates subscription objects with sequential IDs", ->
-            @subscriptionA = @subject.create "topic"
-            @subscriptionB = @subject.create "topic"
+            @subscriptionA = @subject.subscribe "topic"
+            @subscriptionB = @subject.subscribe "topic"
 
             expect(@subscriptionB.id).toBeGreaterThan @subscriptionA.id
