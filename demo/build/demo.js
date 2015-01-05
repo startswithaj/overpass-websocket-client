@@ -6313,7 +6313,7 @@ module.exports = Subscriber = (function() {
 
 
 },{"./Subscription":49}],49:[function(require,module,exports){
-var EventEmitter, Promise, Subscription, TimeoutError, bluebird, regexEscape,
+var AsyncBinaryState, EventEmitter, Promise, Subscription, TimeoutError, bluebird, regexEscape,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6328,6 +6328,8 @@ Promise = require("bluebird").Promise;
 
 TimeoutError = require("bluebird").TimeoutError;
 
+AsyncBinaryState = require("../AsyncBinaryState");
+
 module.exports = Subscription = (function(_super) {
   __extends(Subscription, _super);
 
@@ -6338,11 +6340,8 @@ module.exports = Subscription = (function(_super) {
     this.id = id;
     this.timeout = timeout != null ? timeout : 10;
     this._publish = __bind(this._publish, this);
-    this._unsubscribe = __bind(this._unsubscribe, this);
     this._subscribed = __bind(this._subscribed, this);
-    this._subscribe = __bind(this._subscribe, this);
-    this._subscriber = bluebird.resolve();
-    this._isSubscribed = false;
+    this._state = new AsyncBinaryState();
     atoms = (function() {
       var _i, _len, _ref, _results;
       _ref = topic.split(".");
@@ -6366,37 +6365,38 @@ module.exports = Subscription = (function(_super) {
   }
 
   Subscription.prototype.enable = function() {
-    return this._subscriber = this._subscriber.then(this._subscribe, this._subscribe);
+    return this._state.setOn((function(_this) {
+      return function() {
+        var promise, timeout;
+        promise = new Promise(function(resolve) {
+          return _this._resolve = resolve;
+        });
+        _this.connection.on("message.pubsub.subscribed", _this._subscribed);
+        _this.connection.on("message.pubsub.publish", _this._publish);
+        _this.connection.send({
+          type: "pubsub.subscribe",
+          id: _this.id,
+          topic: _this.topic
+        });
+        timeout = Math.round(_this.timeout * 1000);
+        return promise.timeout(timeout, "Subscription request timed out.")["catch"](TimeoutError, function(error) {
+          _this.connection.removeListener("message.pubsub.subscribed", _this._subscribed);
+          _this.connection.removeListener("message.pubsub.publish", _this._publish);
+          throw error;
+        });
+      };
+    })(this));
   };
 
   Subscription.prototype.disable = function() {
-    return this._subscriber = this._subscriber.then(this._unsubscribe, this._unsubscribe);
-  };
-
-  Subscription.prototype._subscribe = function() {
-    var promise, timeout;
-    if (this._isSubscribed) {
-      return bluebird.resolve();
-    }
-    this._isSubscribed = true;
-    promise = new Promise((function(_this) {
-      return function(resolve) {
-        return _this._resolve = resolve;
-      };
-    })(this));
-    this.connection.on("message.pubsub.subscribed", this._subscribed);
-    this.connection.on("message.pubsub.publish", this._publish);
-    this.connection.send({
-      type: "pubsub.subscribe",
-      id: this.id,
-      topic: this.topic
-    });
-    timeout = Math.round(this.timeout * 1000);
-    return promise.timeout(timeout, "Subscription request timed out.")["catch"](TimeoutError, (function(_this) {
-      return function(error) {
+    return this._state.setOff((function(_this) {
+      return function() {
+        _this.connection.send({
+          type: "pubsub.unsubscribe",
+          id: _this.id
+        });
         _this.connection.removeListener("message.pubsub.subscribed", _this._subscribed);
-        _this.connection.removeListener("message.pubsub.publish", _this._publish);
-        throw error;
+        return _this.connection.removeListener("message.pubsub.publish", _this._publish);
       };
     })(this));
   };
@@ -6405,19 +6405,6 @@ module.exports = Subscription = (function(_super) {
     if (message.id === this.id) {
       return this._resolve();
     }
-  };
-
-  Subscription.prototype._unsubscribe = function() {
-    if (!this._isSubscribed) {
-      return bluebird.resolve();
-    }
-    this._isSubscribed = false;
-    this.connection.send({
-      type: "pubsub.unsubscribe",
-      id: this.id
-    });
-    this.connection.removeListener("message.pubsub.subscribed", this._subscribed);
-    return this.connection.removeListener("message.pubsub.publish", this._publish);
   };
 
   Subscription.prototype._publish = function(message) {
@@ -6432,7 +6419,7 @@ module.exports = Subscription = (function(_super) {
 
 
 
-},{"bluebird":4,"escape-string-regexp":39,"node-event-emitter":41}],50:[function(require,module,exports){
+},{"../AsyncBinaryState":42,"bluebird":4,"escape-string-regexp":39,"node-event-emitter":41}],50:[function(require,module,exports){
 module.exports = {
   Publisher: require('./Publisher'),
   Subscriber: require('./Subscriber')
