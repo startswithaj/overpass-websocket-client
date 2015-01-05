@@ -1,4 +1,8 @@
 module.exports = (grunt) ->
+  process.on "uncaughtException", (e) ->
+    grunt.log.error "Caught unhandled exception: #{e.toString()}"
+    grunt.log.error e.stack
+
   grunt.initConfig
     clean: ['build', 'lib', 'demo/build']
 

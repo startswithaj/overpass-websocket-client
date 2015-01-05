@@ -67,7 +67,7 @@ $(function() {
 
 
 
-},{"../../src":45}],2:[function(require,module,exports){
+},{"../../src":46}],2:[function(require,module,exports){
 /* @preserve
  * The MIT License (MIT)
  * 
@@ -6055,7 +6055,62 @@ EventEmitter.listenerCount = function(emitter, type) {
 };
 
 },{}],42:[function(require,module,exports){
-var Connection, EventEmitter, Promise, WebSocketFactory, bluebird,
+var AsyncBinaryState, bluebird,
+  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+bluebird = require("bluebird");
+
+module.exports = AsyncBinaryState = (function() {
+  function AsyncBinaryState(isOn) {
+    this.isOn = isOn != null ? isOn : false;
+    this._set = __bind(this._set, this);
+    this.set = __bind(this.set, this);
+    this.setOff = __bind(this.setOff, this);
+    this.setOn = __bind(this.setOn, this);
+    this._promise = bluebird.resolve();
+  }
+
+  AsyncBinaryState.prototype.setOn = function(handler) {
+    return this.set(true, handler);
+  };
+
+  AsyncBinaryState.prototype.setOff = function(handler) {
+    return this.set(false, handler);
+  };
+
+  AsyncBinaryState.prototype.set = function(isOn, handler) {
+    var callback;
+    callback = (function(_this) {
+      return function() {
+        return _this._set(isOn, handler);
+      };
+    })(this);
+    return this._promise = this._promise.then(callback, callback);
+  };
+
+  AsyncBinaryState.prototype._set = function(isOn, handler) {
+    var promise;
+    if (isOn === this.isOn) {
+      return bluebird.resolve();
+    }
+    this.isOn = isOn;
+    promise = bluebird.resolve(typeof handler === "function" ? handler() : void 0);
+    promise["catch"]((function(_this) {
+      return function() {
+        return _this.isOn = !_this.isOn;
+      };
+    })(this));
+    return promise;
+  };
+
+  return AsyncBinaryState;
+
+})();
+
+
+
+},{"bluebird":4}],43:[function(require,module,exports){
+var AsyncBinaryState, Connection, EventEmitter, Promise, WebSocketFactory, bluebird,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6068,6 +6123,8 @@ Promise = bluebird.Promise;
 
 WebSocketFactory = require("./WebSocketFactory");
 
+AsyncBinaryState = require("../AsyncBinaryState");
+
 module.exports = Connection = (function(_super) {
   __extends(Connection, _super);
 
@@ -6077,87 +6134,53 @@ module.exports = Connection = (function(_super) {
     this._message = __bind(this._message, this);
     this._close = __bind(this._close, this);
     this._open = __bind(this._open, this);
-    this._disconnect = __bind(this._disconnect, this);
-    this._connect = __bind(this._connect, this);
     this.send = __bind(this.send, this);
     this.disconnect = __bind(this.disconnect, this);
     this.connect = __bind(this.connect, this);
-    this._connectionState = WebSocket.CLOSED;
+    this._state = new AsyncBinaryState();
     this._socket = null;
+    this._socketResolvers = null;
   }
 
   Connection.prototype.connect = function(request) {
     if (request == null) {
       request = {};
     }
-    switch (this._connectionState) {
-      case WebSocket.CONNECTING:
-        return this._connectionPromise;
-      case WebSocket.OPEN:
-        return bluebird.resolve();
-      case WebSocket.CLOSING:
-        return this._connectionPromise = this._connectionPromise.then((function(_this) {
-          return function() {
-            return _this._connect(request);
+    return this._state.setOn((function(_this) {
+      return function() {
+        return new Promise(function(resolve, reject) {
+          _this._socketResolvers = {
+            resolve: resolve,
+            reject: reject
           };
-        })(this));
-      case WebSocket.CLOSED:
-        return this._connectionPromise = this._connect(request);
-    }
+          _this._socket = _this.webSocketFactory.create(_this.url);
+          _this._socket.onopen = function() {
+            return _this._open(request);
+          };
+          return _this._socket.onclose = function() {
+            _this._socketResolvers = null;
+            return reject(new Error("Unable to connect to server."));
+          };
+        });
+      };
+    })(this));
   };
 
   Connection.prototype.disconnect = function() {
-    switch (this._connectionState) {
-      case WebSocket.CONNECTING:
-        return this._connectionPromise = this._connectionPromise.then((function(_this) {
-          return function() {
-            return _this._disconnect();
-          };
-        })(this));
-      case WebSocket.OPEN:
-        return this._connectionPromise = this._disconnect();
-      case WebSocket.CLOSING:
-        return this._connectionPromise;
-      case WebSocket.CLOSED:
-        return bluebird.resolve();
-    }
+    return this._state.setOff((function(_this) {
+      return function() {
+        return new Promise(function(resolve, reject) {
+          _this.on("disconnect", function() {
+            return resolve();
+          });
+          return _this._socket.close();
+        });
+      };
+    })(this));
   };
 
   Connection.prototype.send = function(message) {
     return this._socket.send(JSON.stringify(message));
-  };
-
-  Connection.prototype._connect = function(request) {
-    this._connectionState = WebSocket.CONNECTING;
-    return new Promise((function(_this) {
-      return function(resolve, reject) {
-        _this._webSocketResolvers = {
-          resolve: resolve,
-          reject: reject
-        };
-        _this._socket = _this.webSocketFactory.create(_this.url);
-        _this._socket.onopen = function() {
-          return _this._open(request);
-        };
-        return _this._socket.onclose = function() {
-          _this._webSocketResolvers = null;
-          _this._connectionState = WebSocket.CLOSED;
-          return reject(new Error("Unable to connect to server."));
-        };
-      };
-    })(this));
-  };
-
-  Connection.prototype._disconnect = function() {
-    this._connectionState = WebSocket.CLOSING;
-    return new Promise((function(_this) {
-      return function(resolve, reject) {
-        _this.on("disconnect", function() {
-          return resolve();
-        });
-        return _this._socket.close();
-      };
-    })(this));
   };
 
   Connection.prototype._open = function(request) {
@@ -6171,7 +6194,7 @@ module.exports = Connection = (function(_super) {
   };
 
   Connection.prototype._close = function(event) {
-    this._connectionState = WebSocket.CLOSED;
+    this._state.setOff();
     this._socket = null;
     return this.emit("disconnect", event.code, event.reason);
   };
@@ -6183,20 +6206,18 @@ module.exports = Connection = (function(_super) {
     } catch (_error) {
       error = _error;
       this._socket.close(4001, "Invalid message received.");
-      this._connectionState = WebSocket.CLOSED;
+      this._state.setOff();
       this.emit("error", error);
       return;
     }
     switch (message.type) {
       case "handshake.approve":
-        this._connectionState = WebSocket.OPEN;
-        this._webSocketResolvers.resolve(message.response);
-        this._webSocketResolvers = null;
+        this._socketResolvers.resolve(message.response);
+        this._socketResolvers = null;
         return this.emit("connect", message.response);
       case "handshake.reject":
-        this._connectionState = WebSocket.CLOSED;
-        this._webSocketResolvers.reject(message.reason);
-        this._webSocketResolvers = null;
+        this._socketResolvers.reject(message.reason);
+        this._socketResolvers = null;
         return this.emit("error", message.reason);
       default:
         return this.emit("message." + message.type, message);
@@ -6209,7 +6230,7 @@ module.exports = Connection = (function(_super) {
 
 
 
-},{"./WebSocketFactory":43,"bluebird":4,"node-event-emitter":41}],43:[function(require,module,exports){
+},{"../AsyncBinaryState":42,"./WebSocketFactory":44,"bluebird":4,"node-event-emitter":41}],44:[function(require,module,exports){
 var WebSocketFactory;
 
 module.exports = WebSocketFactory = (function() {
@@ -6227,7 +6248,7 @@ module.exports = WebSocketFactory = (function() {
 
 
 
-},{}],44:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 module.exports = {
   Connection: require('./Connection'),
   WebSocketFactory: require('./WebSocketFactory')
@@ -6235,7 +6256,7 @@ module.exports = {
 
 
 
-},{"./Connection":42,"./WebSocketFactory":43}],45:[function(require,module,exports){
+},{"./Connection":43,"./WebSocketFactory":44}],46:[function(require,module,exports){
 module.exports = {
   connection: require('./connection'),
   pubsub: require('./pubsub'),
@@ -6244,7 +6265,7 @@ module.exports = {
 
 
 
-},{"./connection":44,"./pubsub":49,"./rpc":57}],46:[function(require,module,exports){
+},{"./connection":45,"./pubsub":50,"./rpc":58}],47:[function(require,module,exports){
 var Publisher,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -6268,7 +6289,7 @@ module.exports = Publisher = (function() {
 
 
 
-},{}],47:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 var Subscriber, Subscription,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -6291,7 +6312,7 @@ module.exports = Subscriber = (function() {
 
 
 
-},{"./Subscription":48}],48:[function(require,module,exports){
+},{"./Subscription":49}],49:[function(require,module,exports){
 var EventEmitter, Promise, Subscription, TimeoutError, bluebird, regexEscape,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __hasProp = {}.hasOwnProperty,
@@ -6411,7 +6432,7 @@ module.exports = Subscription = (function(_super) {
 
 
 
-},{"bluebird":4,"escape-string-regexp":39,"node-event-emitter":41}],49:[function(require,module,exports){
+},{"bluebird":4,"escape-string-regexp":39,"node-event-emitter":41}],50:[function(require,module,exports){
 module.exports = {
   Publisher: require('./Publisher'),
   Subscriber: require('./Subscriber')
@@ -6419,7 +6440,7 @@ module.exports = {
 
 
 
-},{"./Publisher":46,"./Subscriber":47}],50:[function(require,module,exports){
+},{"./Publisher":47,"./Subscriber":48}],51:[function(require,module,exports){
 var InvalidMessageError, Promise, Request, Response, ResponseCode, RpcClient, bluebird,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __slice = [].slice;
@@ -6516,7 +6537,7 @@ module.exports = RpcClient = (function() {
 
 
 
-},{"./error/InvalidMessageError":53,"./message/Request":58,"./message/Response":59,"./message/ResponseCode":60,"bluebird":4}],51:[function(require,module,exports){
+},{"./error/InvalidMessageError":54,"./message/Request":59,"./message/Response":60,"./message/ResponseCode":61,"bluebird":4}],52:[function(require,module,exports){
 var ExecutionError, ResponseCode,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6537,7 +6558,7 @@ module.exports = ExecutionError = (function(_super) {
 
 
 
-},{"../message/ResponseCode":60}],52:[function(require,module,exports){
+},{"../message/ResponseCode":61}],53:[function(require,module,exports){
 var InvalidArgumentsError, ResponseCode,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6558,7 +6579,7 @@ module.exports = InvalidArgumentsError = (function(_super) {
 
 
 
-},{"../message/ResponseCode":60}],53:[function(require,module,exports){
+},{"../message/ResponseCode":61}],54:[function(require,module,exports){
 var InvalidMessageError, ResponseCode,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6579,7 +6600,7 @@ module.exports = InvalidMessageError = (function(_super) {
 
 
 
-},{"../message/ResponseCode":60}],54:[function(require,module,exports){
+},{"../message/ResponseCode":61}],55:[function(require,module,exports){
 var TimeoutError,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6598,7 +6619,7 @@ module.exports = TimeoutError = (function(_super) {
 
 
 
-},{}],55:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 var ResponseCode, UnknownProcedureError,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6620,7 +6641,7 @@ module.exports = UnknownProcedureError = (function(_super) {
 
 
 
-},{"../message/ResponseCode":60}],56:[function(require,module,exports){
+},{"../message/ResponseCode":61}],57:[function(require,module,exports){
 module.exports = {
   ExecutionError: require('./ExecutionError'),
   InvalidArgumentsError: require('./InvalidArgumentsError'),
@@ -6631,7 +6652,7 @@ module.exports = {
 
 
 
-},{"./ExecutionError":51,"./InvalidArgumentsError":52,"./InvalidMessageError":53,"./TimeoutError":54,"./UnknownProcedureError":55}],57:[function(require,module,exports){
+},{"./ExecutionError":52,"./InvalidArgumentsError":53,"./InvalidMessageError":54,"./TimeoutError":55,"./UnknownProcedureError":56}],58:[function(require,module,exports){
 module.exports = {
   error: require('./error'),
   message: require('./message'),
@@ -6640,7 +6661,7 @@ module.exports = {
 
 
 
-},{"./RpcClient":50,"./error":56,"./message":61}],58:[function(require,module,exports){
+},{"./RpcClient":51,"./error":57,"./message":62}],59:[function(require,module,exports){
 var Request,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -6661,7 +6682,7 @@ module.exports = Request = (function() {
 
 
 
-},{}],59:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 var ExecutionError, InvalidMessageError, Response, ResponseCode, UnknownProcedureError,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -6706,7 +6727,7 @@ module.exports = Response = (function() {
 
 
 
-},{"../error/ExecutionError":51,"../error/InvalidMessageError":53,"../error/UnknownProcedureError":55,"./ResponseCode":60}],60:[function(require,module,exports){
+},{"../error/ExecutionError":52,"../error/InvalidMessageError":54,"../error/UnknownProcedureError":56,"./ResponseCode":61}],61:[function(require,module,exports){
 var Enum;
 
 Enum = require('enum');
@@ -6721,7 +6742,7 @@ module.exports = new Enum({
 
 
 
-},{"enum":37}],61:[function(require,module,exports){
+},{"enum":37}],62:[function(require,module,exports){
 module.exports = {
   Request: require('./Request'),
   Response: require('./Response'),
@@ -6730,4 +6751,4 @@ module.exports = {
 
 
 
-},{"./Request":58,"./Response":59,"./ResponseCode":60}]},{},[42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,1]);
+},{"./Request":59,"./Response":60,"./ResponseCode":61}]},{},[42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,1]);

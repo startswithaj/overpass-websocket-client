@@ -2,52 +2,37 @@ EventEmitter = require "node-event-emitter"
 bluebird = require "bluebird"
 {Promise} = bluebird
 WebSocketFactory = require "./WebSocketFactory"
+AsyncBinaryState = require "../AsyncBinaryState"
 
 module.exports = class Connection extends EventEmitter
 
     constructor: (@url, @webSocketFactory = new WebSocketFactory()) ->
-        @_connectionState = WebSocket.CLOSED
-        @_socket          = null
+        @_state = new AsyncBinaryState()
+        @_socket = null
+        @_socketResolvers = null
 
     connect: (request = {}) =>
-        return switch @_connectionState
-            when WebSocket.CONNECTING then @_connectionPromise
-            when WebSocket.OPEN       then bluebird.resolve()
-            when WebSocket.CLOSING    then @_connectionPromise = @_connectionPromise.then => @_connect request
-            when WebSocket.CLOSED     then @_connectionPromise = @_connect request
+        return @_state.setOn =>
+            return new Promise (resolve, reject) =>
+                @_socketResolvers = {resolve, reject}
+                @_socket = @webSocketFactory.create @url
+                @_socket.onopen = =>
+                    @_open request
+                @_socket.onclose = =>
+                    @_socketResolvers = null
+                    reject new Error "Unable to connect to server."
 
     disconnect: =>
-        return switch @_connectionState
-            when WebSocket.CONNECTING then @_connectionPromise = @_connectionPromise.then => @_disconnect()
-            when WebSocket.OPEN       then @_connectionPromise = @_disconnect()
-            when WebSocket.CLOSING    then @_connectionPromise
-            when WebSocket.CLOSED     then bluebird.resolve()
+        return @_state.setOff =>
+            return new Promise (resolve, reject) =>
+                @on "disconnect", -> resolve()
+                @_socket.close()
 
     send: (message) =>
         @_socket.send JSON.stringify message
 
-    _connect: (request) =>
-        @_connectionState = WebSocket.CONNECTING
-
-        return new Promise (resolve, reject) =>
-            @_webSocketResolvers = {resolve, reject}
-            @_socket = @webSocketFactory.create @url
-            @_socket.onopen = =>
-                @_open request
-            @_socket.onclose = =>
-                @_webSocketResolvers = null
-                @_connectionState = WebSocket.CLOSED
-                reject new Error "Unable to connect to server."
-
-    _disconnect: =>
-        @_connectionState = WebSocket.CLOSING
-
-        return new Promise (resolve, reject) =>
-            @on "disconnect", -> resolve()
-            @_socket.close()
-
     _open: (request) =>
-        @_socket.onclose   = @_close
+        @_socket.onclose = @_close
         @_socket.onmessage = @_message
 
         @send \
@@ -56,7 +41,7 @@ module.exports = class Connection extends EventEmitter
             request: request,
 
     _close: (event) =>
-        @_connectionState = WebSocket.CLOSED
+        @_state.setOff()
         @_socket = null
         @emit "disconnect", event.code, event.reason
 
@@ -65,20 +50,18 @@ module.exports = class Connection extends EventEmitter
             message = JSON.parse event.data
         catch error
             @_socket.close 4001, "Invalid message received."
-            @_connectionState = WebSocket.CLOSED
+            @_state.setOff()
             @emit "error", error
             return
 
         switch message.type
             when "handshake.approve"
-                @_connectionState = WebSocket.OPEN
-                @_webSocketResolvers.resolve message.response
-                @_webSocketResolvers = null
+                @_socketResolvers.resolve message.response
+                @_socketResolvers = null
                 @emit "connect", message.response
             when "handshake.reject"
-                @_connectionState = WebSocket.CLOSED
-                @_webSocketResolvers.reject message.reason
-                @_webSocketResolvers = null
+                @_socketResolvers.reject message.reason
+                @_socketResolvers = null
                 @emit "error", message.reason
             else
                 @emit "message.#{message.type}", message
