@@ -6260,12 +6260,13 @@ module.exports = {
 module.exports = {
   connection: require('./connection'),
   pubsub: require('./pubsub'),
-  rpc: require('./rpc')
+  rpc: require('./rpc'),
+  AsyncBinaryState: require('./AsyncBinaryState')
 };
 
 
 
-},{"./connection":45,"./pubsub":50,"./rpc":58}],47:[function(require,module,exports){
+},{"./AsyncBinaryState":42,"./connection":45,"./pubsub":50,"./rpc":58}],47:[function(require,module,exports){
 var Publisher,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
