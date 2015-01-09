@@ -2,6 +2,6 @@ Subscription = require "./Subscription"
 
 module.exports = class Subscriber
 
-    constructor: (@connection) -> @_id = 0
+    constructor: (@connection, @timeout = 3) -> @_id = 0
 
-    subscribe: (topic) => new Subscription @connection, topic, ++@_id
+    subscribe: (topic) => new Subscription @connection, topic, ++@_id, @timeout

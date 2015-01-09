@@ -7,7 +7,7 @@ AsyncBinaryState = require "../AsyncBinaryState"
 
 module.exports = class Subscription extends EventEmitter
 
-    constructor: (@connection, @topic, @id, @timeout = 10) ->
+    constructor: (@connection, @topic, @id, @timeout = 3) ->
         @_state = new AsyncBinaryState()
 
         atoms = for atom in topic.split "."

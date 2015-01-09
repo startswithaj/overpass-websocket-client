@@ -6130,7 +6130,7 @@ module.exports = Connection = (function(_super) {
 
   function Connection(url, connectTimeout, webSocketFactory) {
     this.url = url;
-    this.connectTimeout = connectTimeout != null ? connectTimeout : 10;
+    this.connectTimeout = connectTimeout != null ? connectTimeout : 3;
     this.webSocketFactory = webSocketFactory != null ? webSocketFactory : new WebSocketFactory();
     this._message = __bind(this._message, this);
     this._close = __bind(this._close, this);
@@ -6307,14 +6307,15 @@ var Subscriber, Subscription,
 Subscription = require("./Subscription");
 
 module.exports = Subscriber = (function() {
-  function Subscriber(connection) {
+  function Subscriber(connection, timeout) {
     this.connection = connection;
+    this.timeout = timeout != null ? timeout : 3;
     this.subscribe = __bind(this.subscribe, this);
     this._id = 0;
   }
 
   Subscriber.prototype.subscribe = function(topic) {
-    return new Subscription(this.connection, topic, ++this._id);
+    return new Subscription(this.connection, topic, ++this._id, this.timeout);
   };
 
   return Subscriber;
@@ -6349,7 +6350,7 @@ module.exports = Subscription = (function(_super) {
     this.connection = connection;
     this.topic = topic;
     this.id = id;
-    this.timeout = timeout != null ? timeout : 10;
+    this.timeout = timeout != null ? timeout : 3;
     this._publish = __bind(this._publish, this);
     this._subscribed = __bind(this._subscribed, this);
     this._state = new AsyncBinaryState();
@@ -6458,7 +6459,7 @@ ResponseCode = require('./message/ResponseCode');
 module.exports = RpcClient = (function() {
   function RpcClient(connection, timeout) {
     this.connection = connection;
-    this.timeout = timeout != null ? timeout : 10;
+    this.timeout = timeout != null ? timeout : 3;
     this._recv = __bind(this._recv, this);
     this._send = __bind(this._send, this);
     this.invokeArray = __bind(this.invokeArray, this);

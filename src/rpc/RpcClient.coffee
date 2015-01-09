@@ -6,7 +6,7 @@ Response = require './message/Response'
 ResponseCode = require './message/ResponseCode'
 
 module.exports = class RpcClient
-    constructor: (@connection, @timeout = 10) ->
+    constructor: (@connection, @timeout = 3) ->
         @_requests = {}
         @_id = 0
 

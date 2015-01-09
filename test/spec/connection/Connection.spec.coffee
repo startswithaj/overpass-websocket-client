@@ -31,7 +31,7 @@ describe "connection.Connection", ->
     it "creates sensible default dependencies", ->
         @subject = new Connection @url
 
-        expect(@subject.connectTimeout).toBe 10
+        expect(@subject.connectTimeout).toBe 3
         expect(@subject.webSocketFactory).toEqual new WebSocketFactory()
 
     describe "connect()", ->

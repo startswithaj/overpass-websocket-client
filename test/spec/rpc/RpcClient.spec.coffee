@@ -15,7 +15,7 @@ describe "rpc.RpcClient", ->
     it "creates sensible default dependencies", ->
         @subject = new RpcClient @connection
 
-        expect(@subject.timeout).toBe 10
+        expect(@subject.timeout).toBe 3
 
     describe "constructor()", ->
 

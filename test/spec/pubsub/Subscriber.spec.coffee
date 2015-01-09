@@ -6,10 +6,12 @@ describe "pubsub.Subscriber", ->
 
     beforeEach ->
         @connection = jasmine.createSpyObj "connection", ["on"]
-        @subject = new Subscriber @connection
+        @timeout = 111
+        @subject = new Subscriber @connection, @timeout
 
     it "stores the supplied dependencies", ->
         expect(@subject.connection).toBe @connection
+        expect(@subject.timeout).toBe @timeout
 
     describe "subscribe()", ->
 
@@ -18,10 +20,11 @@ describe "pubsub.Subscriber", ->
 
             expect(@subscription.topic).toBe "topic"
 
-        it "passes the corret dependencies", ->
+        it "passes the correct dependencies", ->
             @subscription = @subject.subscribe "topic"
 
             expect(@subscription.connection).toBe @connection
+            expect(@subscription.timeout).toBe @timeout
 
         it "creates subscription objects with sequential IDs", ->
             @subscriptionA = @subject.subscribe "topic"

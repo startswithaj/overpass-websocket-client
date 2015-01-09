@@ -19,7 +19,7 @@ describe "pubsub.Subscription", ->
     it "creates sensible default dependencies", ->
         @subject = new Subscription @connection, @topic, @_id
 
-        expect(@subject.timeout).toBe 10
+        expect(@subject.timeout).toBe 3
 
     describe "enable()", ->
 

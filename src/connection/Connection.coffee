@@ -8,7 +8,7 @@ module.exports = class Connection extends EventEmitter
 
     constructor: (
         @url,
-        @connectTimeout = 10,
+        @connectTimeout = 3,
         @webSocketFactory = new WebSocketFactory()
     ) ->
         @_state = new AsyncBinaryState()
