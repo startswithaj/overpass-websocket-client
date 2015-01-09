@@ -8,8 +8,9 @@ describe "connection.Connection", ->
 
     beforeEach ->
         @url = "http://example.org/"
+        @connectTimeout = 111
         @webSocketFactory = jasmine.createSpyObj 'webSocketFactory', ['create']
-        @subject = new Connection @url, @webSocketFactory
+        @subject = new Connection @url, @connectTimeout, @webSocketFactory
 
         @webSocket = jasmine.createSpyObj 'webSocket', ['send', 'close']
         @webSocketFactory.create.andReturn @webSocket
@@ -24,11 +25,13 @@ describe "connection.Connection", ->
 
     it "stores the supplied dependencies", ->
         expect(@subject.url).toBe @url
+        expect(@subject.connectTimeout).toBe @connectTimeout
         expect(@subject.webSocketFactory).toBe @webSocketFactory
 
     it "creates sensible default dependencies", ->
         @subject = new Connection @url
 
+        expect(@subject.connectTimeout).toBe 10
         expect(@subject.webSocketFactory).toEqual new WebSocketFactory()
 
     describe "connect()", ->
@@ -112,6 +115,12 @@ describe "connection.Connection", ->
             setImmediate =>
                 @webSocket.onopen()
                 @webSocket.onmessage data: '{"type":"handshake.reject","reason":"reasonValue"}'
+
+        it "handles handshake timouts", (done) ->
+            @subject.connectTimeout = .001
+            @subject.connect(@request).catch (error) ->
+                expect(error.message).toBe "Connection timed out."
+                done()
 
     describe "disconnect()", ->
 

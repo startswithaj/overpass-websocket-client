@@ -6128,8 +6128,9 @@ AsyncBinaryState = require("../AsyncBinaryState");
 module.exports = Connection = (function(_super) {
   __extends(Connection, _super);
 
-  function Connection(url, webSocketFactory) {
+  function Connection(url, connectTimeout, webSocketFactory) {
     this.url = url;
+    this.connectTimeout = connectTimeout != null ? connectTimeout : 10;
     this.webSocketFactory = webSocketFactory != null ? webSocketFactory : new WebSocketFactory();
     this._message = __bind(this._message, this);
     this._close = __bind(this._close, this);
@@ -6148,7 +6149,8 @@ module.exports = Connection = (function(_super) {
     }
     return this._state.setOn((function(_this) {
       return function() {
-        return new Promise(function(resolve, reject) {
+        var promise, timeout;
+        promise = new Promise(function(resolve, reject) {
           _this._socketResolvers = {
             resolve: resolve,
             reject: reject
@@ -6162,6 +6164,8 @@ module.exports = Connection = (function(_super) {
             return reject(new Error("Unable to connect to server."));
           };
         });
+        timeout = Math.round(_this.connectTimeout * 1000);
+        return promise.timeout(timeout, "Connection timed out.");
       };
     })(this));
   };

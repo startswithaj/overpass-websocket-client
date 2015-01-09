@@ -6,14 +6,18 @@ AsyncBinaryState = require "../AsyncBinaryState"
 
 module.exports = class Connection extends EventEmitter
 
-    constructor: (@url, @webSocketFactory = new WebSocketFactory()) ->
+    constructor: (
+        @url,
+        @connectTimeout = 10,
+        @webSocketFactory = new WebSocketFactory()
+    ) ->
         @_state = new AsyncBinaryState()
         @_socket = null
         @_socketResolvers = null
 
     connect: (request = {}) =>
         return @_state.setOn =>
-            return new Promise (resolve, reject) =>
+            promise = new Promise (resolve, reject) =>
                 @_socketResolvers = {resolve, reject}
                 @_socket = @webSocketFactory.create @url
                 @_socket.onopen = =>
@@ -22,14 +26,17 @@ module.exports = class Connection extends EventEmitter
                     @_socketResolvers = null
                     reject new Error "Unable to connect to server."
 
+            timeout = Math.round @connectTimeout * 1000
+
+            promise.timeout timeout, "Connection timed out."
+
     disconnect: =>
         return @_state.setOff =>
             return new Promise (resolve, reject) =>
                 @on "disconnect", -> resolve()
                 @_socket.close()
 
-    send: (message) =>
-        @_socket.send JSON.stringify message
+    send: (message) => @_socket.send JSON.stringify message
 
     _open: (request) =>
         @_socket.onclose = @_close
