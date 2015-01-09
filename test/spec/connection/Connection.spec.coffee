@@ -118,8 +118,9 @@ describe "connection.Connection", ->
 
         it "handles handshake timouts", (done) ->
             @subject.connectTimeout = .001
-            @subject.connect(@request).catch (error) ->
+            @subject.connect(@request).catch (error) =>
                 expect(error.message).toBe "Connection timed out."
+                expect(@webSocket.close).toHaveBeenCalledWith 4001, "Connection handshake timed out."
                 done()
 
     describe "disconnect()", ->

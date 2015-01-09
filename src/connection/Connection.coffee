@@ -1,6 +1,6 @@
 EventEmitter = require "node-event-emitter"
 bluebird = require "bluebird"
-{Promise} = bluebird
+{Promise, TimeoutError} = bluebird
 WebSocketFactory = require "./WebSocketFactory"
 AsyncBinaryState = require "../AsyncBinaryState"
 
@@ -29,6 +29,10 @@ module.exports = class Connection extends EventEmitter
             timeout = Math.round @connectTimeout * 1000
 
             promise.timeout timeout, "Connection timed out."
+            .catch TimeoutError, (error) =>
+                @_socket.close 4001, "Connection handshake timed out."
+
+                throw error
 
     disconnect: =>
         return @_state.setOff =>

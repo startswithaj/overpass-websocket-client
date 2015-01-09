@@ -6110,7 +6110,7 @@ module.exports = AsyncBinaryState = (function() {
 
 
 },{"bluebird":4}],43:[function(require,module,exports){
-var AsyncBinaryState, Connection, EventEmitter, Promise, WebSocketFactory, bluebird,
+var AsyncBinaryState, Connection, EventEmitter, Promise, TimeoutError, WebSocketFactory, bluebird,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6119,7 +6119,7 @@ EventEmitter = require("node-event-emitter");
 
 bluebird = require("bluebird");
 
-Promise = bluebird.Promise;
+Promise = bluebird.Promise, TimeoutError = bluebird.TimeoutError;
 
 WebSocketFactory = require("./WebSocketFactory");
 
@@ -6165,7 +6165,10 @@ module.exports = Connection = (function(_super) {
           };
         });
         timeout = Math.round(_this.connectTimeout * 1000);
-        return promise.timeout(timeout, "Connection timed out.");
+        return promise.timeout(timeout, "Connection timed out.")["catch"](TimeoutError, function(error) {
+          _this._socket.close(4001, "Connection handshake timed out.");
+          throw error;
+        });
       };
     })(this));
   };
