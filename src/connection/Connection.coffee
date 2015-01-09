@@ -20,11 +20,8 @@ module.exports = class Connection extends EventEmitter
             promise = new Promise (resolve, reject) =>
                 @_socketResolvers = {resolve, reject}
                 @_socket = @webSocketFactory.create @url
-                @_socket.onopen = =>
-                    @_open request
-                @_socket.onclose = =>
-                    @_socketResolvers = null
-                    reject new Error "Unable to connect to server."
+                @_socket.onopen = => @_open request
+                @_socket.onclose = @_closeDuringConnect
 
             timeout = Math.round @connectTimeout * 1000
 
@@ -43,13 +40,16 @@ module.exports = class Connection extends EventEmitter
     send: (message) => @_socket.send JSON.stringify message
 
     _open: (request) =>
-        @_socket.onclose = @_close
         @_socket.onmessage = @_message
 
         @send \
             type: "handshake.request",
             version: "1.0.0",
             request: request,
+
+    _closeDuringConnect: =>
+        @_socketResolvers.reject new Error "Unable to connect to server."
+        @_socketResolvers = null
 
     _close: (event) =>
         @_state.setOff()
@@ -69,6 +69,7 @@ module.exports = class Connection extends EventEmitter
             when "handshake.approve"
                 @_socketResolvers.resolve message.response
                 @_socketResolvers = null
+                @_socket.onclose = @_close
                 @emit "connect", message.response
             when "handshake.reject"
                 @_socketResolvers.reject message.reason

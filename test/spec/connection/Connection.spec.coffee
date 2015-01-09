@@ -123,6 +123,17 @@ describe "connection.Connection", ->
                 expect(@webSocket.close).toHaveBeenCalledWith 4001, "Connection handshake timed out."
                 done()
 
+        it "handles handshake disonnects", (done) ->
+            @subject.connect(@request).catch (error) =>
+                expect(error.message).toBe "Unable to connect to server."
+                done()
+
+            setImmediate =>
+                @webSocket.onopen()
+
+                setImmediate =>
+                    @webSocket.onclose()
+
     describe "disconnect()", ->
 
         it "does nothing when already disconnected", (done) ->

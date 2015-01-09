@@ -6134,6 +6134,7 @@ module.exports = Connection = (function(_super) {
     this.webSocketFactory = webSocketFactory != null ? webSocketFactory : new WebSocketFactory();
     this._message = __bind(this._message, this);
     this._close = __bind(this._close, this);
+    this._closeDuringConnect = __bind(this._closeDuringConnect, this);
     this._open = __bind(this._open, this);
     this.send = __bind(this.send, this);
     this.disconnect = __bind(this.disconnect, this);
@@ -6159,10 +6160,7 @@ module.exports = Connection = (function(_super) {
           _this._socket.onopen = function() {
             return _this._open(request);
           };
-          return _this._socket.onclose = function() {
-            _this._socketResolvers = null;
-            return reject(new Error("Unable to connect to server."));
-          };
+          return _this._socket.onclose = _this._closeDuringConnect;
         });
         timeout = Math.round(_this.connectTimeout * 1000);
         return promise.timeout(timeout, "Connection timed out.")["catch"](TimeoutError, function(error) {
@@ -6191,13 +6189,17 @@ module.exports = Connection = (function(_super) {
   };
 
   Connection.prototype._open = function(request) {
-    this._socket.onclose = this._close;
     this._socket.onmessage = this._message;
     return this.send({
       type: "handshake.request",
       version: "1.0.0",
       request: request
     });
+  };
+
+  Connection.prototype._closeDuringConnect = function() {
+    this._socketResolvers.reject(new Error("Unable to connect to server."));
+    return this._socketResolvers = null;
   };
 
   Connection.prototype._close = function(event) {
@@ -6221,6 +6223,7 @@ module.exports = Connection = (function(_super) {
       case "handshake.approve":
         this._socketResolvers.resolve(message.response);
         this._socketResolvers = null;
+        this._socket.onclose = this._close;
         return this.emit("connect", message.response);
       case "handshake.reject":
         this._socketResolvers.reject(message.reason);
