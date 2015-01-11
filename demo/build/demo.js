@@ -6351,8 +6351,11 @@ module.exports = Subscription = (function(_super) {
     this.topic = topic;
     this.id = id;
     this.timeout = timeout != null ? timeout : 3;
+    this._removeListeners = __bind(this._removeListeners, this);
+    this._disconnect = __bind(this._disconnect, this);
     this._publish = __bind(this._publish, this);
     this._subscribed = __bind(this._subscribed, this);
+    this.connection.on('disconnect', this._disconnect);
     this._state = new AsyncBinaryState();
     atoms = (function() {
       var _i, _len, _ref, _results;
@@ -6407,8 +6410,7 @@ module.exports = Subscription = (function(_super) {
           type: "pubsub.unsubscribe",
           id: _this.id
         });
-        _this.connection.removeListener("message.pubsub.subscribed", _this._subscribed);
-        return _this.connection.removeListener("message.pubsub.publish", _this._publish);
+        return _this._removeListeners();
       };
     })(this));
   };
@@ -6423,6 +6425,15 @@ module.exports = Subscription = (function(_super) {
     if (this._pattern.test(message.topic)) {
       return this.emit("message", message.topic, message.payload);
     }
+  };
+
+  Subscription.prototype._disconnect = function() {
+    return this._state.setOff(this._removeListeners);
+  };
+
+  Subscription.prototype._removeListeners = function() {
+    this.connection.removeListener("message.pubsub.subscribed", this._subscribed);
+    return this.connection.removeListener("message.pubsub.publish", this._publish);
   };
 
   return Subscription;

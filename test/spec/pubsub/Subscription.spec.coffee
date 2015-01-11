@@ -21,6 +21,11 @@ describe "pubsub.Subscription", ->
 
         expect(@subject.timeout).toBe 3
 
+    describe "constructor()", ->
+
+        it "listens for disconnections", ->
+            expect(@connection.on).toHaveBeenCalledWith "disconnect", @subject._disconnect
+
     describe "enable()", ->
 
         it "subscribes to the appropriate topic", (done) ->
@@ -122,3 +127,18 @@ describe "pubsub.Subscription", ->
             @subject._publish
                 topic: "a.x.y.b.z.c"
                 payload: a: "b", c: "d"
+
+    describe "_disconnect()", ->
+
+        it "removes the message event listeners", (done) ->
+            @subject.enable()
+            .then =>
+                @subject._disconnect()
+            .then =>
+                expect(@connection.removeListener).toHaveBeenCalledWith \
+                    "message.pubsub.subscribed",
+                    @subject._subscribed
+                expect(@connection.removeListener).toHaveBeenCalledWith "message.pubsub.publish", @subject._publish
+                done()
+
+            setImmediate => @subject._subscribed id: @_id

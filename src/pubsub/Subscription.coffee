@@ -8,6 +8,8 @@ AsyncBinaryState = require "../AsyncBinaryState"
 module.exports = class Subscription extends EventEmitter
 
     constructor: (@connection, @topic, @id, @timeout = 3) ->
+        @connection.on 'disconnect', @_disconnect
+
         @_state = new AsyncBinaryState()
 
         atoms = for atom in topic.split "."
@@ -44,11 +46,17 @@ module.exports = class Subscription extends EventEmitter
     disable: ->
         @_state.setOff =>
             @connection.send type: "pubsub.unsubscribe", id: @id
-            @connection.removeListener "message.pubsub.subscribed", @_subscribed
-            @connection.removeListener "message.pubsub.publish", @_publish
+            @_removeListeners()
 
     _subscribed: (message) => @_resolve() if message.id is @id
 
     _publish: (message) =>
         if @_pattern.test message.topic
             @emit "message", message.topic, message.payload
+
+    _disconnect: => @_state.setOff @_removeListeners
+
+    _removeListeners: =>
+        @connection.removeListener "message.pubsub.subscribed", @_subscribed
+        @connection.removeListener "message.pubsub.publish", @_publish
+
