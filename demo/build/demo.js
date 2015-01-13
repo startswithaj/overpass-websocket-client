@@ -6355,7 +6355,6 @@ module.exports = Subscription = (function(_super) {
     this._disconnect = __bind(this._disconnect, this);
     this._publish = __bind(this._publish, this);
     this._subscribed = __bind(this._subscribed, this);
-    this.connection.on('disconnect', this._disconnect);
     this._state = new AsyncBinaryState();
     atoms = (function() {
       var _i, _len, _ref, _results;
@@ -6388,6 +6387,7 @@ module.exports = Subscription = (function(_super) {
         });
         _this.connection.on("message.pubsub.subscribed", _this._subscribed);
         _this.connection.on("message.pubsub.publish", _this._publish);
+        _this.connection.on("disconnect", _this._disconnect);
         _this.connection.send({
           type: "pubsub.subscribe",
           id: _this.id,
@@ -6395,8 +6395,7 @@ module.exports = Subscription = (function(_super) {
         });
         timeout = Math.round(_this.timeout * 1000);
         return promise.timeout(timeout, "Subscription request timed out.")["catch"](TimeoutError, function(error) {
-          _this.connection.removeListener("message.pubsub.subscribed", _this._subscribed);
-          _this.connection.removeListener("message.pubsub.publish", _this._publish);
+          _this._removeListeners();
           throw error;
         });
       };
@@ -6433,7 +6432,8 @@ module.exports = Subscription = (function(_super) {
 
   Subscription.prototype._removeListeners = function() {
     this.connection.removeListener("message.pubsub.subscribed", this._subscribed);
-    return this.connection.removeListener("message.pubsub.publish", this._publish);
+    this.connection.removeListener("message.pubsub.publish", this._publish);
+    return this.connection.removeListener("disconnect", this._disconnect);
   };
 
   return Subscription;

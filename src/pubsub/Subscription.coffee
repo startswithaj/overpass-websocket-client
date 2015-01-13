@@ -8,7 +8,6 @@ AsyncBinaryState = require "../AsyncBinaryState"
 module.exports = class Subscription extends EventEmitter
 
     constructor: (@connection, @topic, @id, @timeout = 3) ->
-        @connection.on 'disconnect', @_disconnect
 
         @_state = new AsyncBinaryState()
 
@@ -29,6 +28,8 @@ module.exports = class Subscription extends EventEmitter
 
             @connection.on "message.pubsub.subscribed", @_subscribed
             @connection.on "message.pubsub.publish", @_publish
+            @connection.on "disconnect", @_disconnect
+
             @connection.send type: "pubsub.subscribe", id: @id, topic: @topic
 
             timeout = Math.round @timeout * 1000
@@ -36,10 +37,7 @@ module.exports = class Subscription extends EventEmitter
             promise
             .timeout timeout, "Subscription request timed out."
             .catch TimeoutError, (error) =>
-                @connection.removeListener \
-                    "message.pubsub.subscribed",
-                    @_subscribed
-                @connection.removeListener "message.pubsub.publish", @_publish
+                @_removeListeners()
 
                 throw error
 
@@ -59,4 +57,5 @@ module.exports = class Subscription extends EventEmitter
     _removeListeners: =>
         @connection.removeListener "message.pubsub.subscribed", @_subscribed
         @connection.removeListener "message.pubsub.publish", @_publish
+        @connection.removeListener "disconnect", @_disconnect
 

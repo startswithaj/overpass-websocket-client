@@ -21,11 +21,6 @@ describe "pubsub.Subscription", ->
 
         expect(@subject.timeout).toBe 3
 
-    describe "constructor()", ->
-
-        it "listens for disconnections", ->
-            expect(@connection.on).toHaveBeenCalledWith "disconnect", @subject._disconnect
-
     describe "enable()", ->
 
         it "subscribes to the appropriate topic", (done) ->
@@ -39,6 +34,7 @@ describe "pubsub.Subscription", ->
             @subject.enable().then =>
                 expect(@connection.on).toHaveBeenCalledWith "message.pubsub.subscribed", @subject._subscribed
                 expect(@connection.on).toHaveBeenCalledWith "message.pubsub.publish", @subject._publish
+                expect(@connection.on).toHaveBeenCalledWith "disconnect", @subject._disconnect
                 done()
 
             setImmediate => @subject._subscribed id: @_id
@@ -139,6 +135,7 @@ describe "pubsub.Subscription", ->
                     "message.pubsub.subscribed",
                     @subject._subscribed
                 expect(@connection.removeListener).toHaveBeenCalledWith "message.pubsub.publish", @subject._publish
+                expect(@connection.removeListener).toHaveBeenCalledWith "disconnect", @subject._disconnect
                 done()
 
             setImmediate => @subject._subscribed id: @_id
