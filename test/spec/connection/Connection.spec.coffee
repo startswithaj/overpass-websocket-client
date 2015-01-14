@@ -59,17 +59,15 @@ describe "connection.Connection", ->
 
         describe "on failure", ->
 
-            beforeEach (done) ->
-                @connectPromise = @subject.connect @request
+            it "rejects the promise", (done) ->
+                @subject.connect(@request)
+                .catch (error) =>
+                    expect(error.message).toBe "Unable to connect to server."
+                    expect(@subject._state.isOn).toBe false
+                    done()
 
                 setImmediate =>
                     @webSocket.onclose code: 111, reason: 'reason'
-                    done()
-
-            it "rejects the promise", (done) ->
-                @connectPromise.catch (error) =>
-                    expect(error.message).toBe "Unable to connect to server."
-                    expect(@subject._state.isOn).toBe false
                     done()
 
         it "defaults to an empty request", (done) ->
