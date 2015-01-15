@@ -6222,7 +6222,6 @@ module.exports = Connection = (function(_super) {
       error = _error;
       this._socket.close(4001, "Invalid message received.");
       this._state.setOff();
-      this.emit("error", error);
       return;
     }
     switch (message.type) {
@@ -6236,8 +6235,7 @@ module.exports = Connection = (function(_super) {
         this._socketResolvers = null;
         this._socket.onclose = null;
         this._socket = null;
-        this._state.setOff();
-        return this.emit("error", message.reason);
+        return this._state.setOff();
       default:
         return this.emit("message." + message.type, message);
     }

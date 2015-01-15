@@ -62,7 +62,6 @@ module.exports = class Connection extends EventEmitter
         catch error
             @_socket.close 4001, "Invalid message received."
             @_state.setOff()
-            @emit "error", error
             return
 
         switch message.type
@@ -77,6 +76,5 @@ module.exports = class Connection extends EventEmitter
                 @_socket.onclose = null
                 @_socket = null
                 @_state.setOff()
-                @emit "error", message.reason
             else
                 @emit "message.#{message.type}", message

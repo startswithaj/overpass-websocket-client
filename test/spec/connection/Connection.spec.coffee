@@ -15,9 +15,6 @@ describe "connection.Connection", ->
         @webSocket = jasmine.createSpyObj 'webSocket', ['send', 'close']
         @webSocketFactory.create.andReturn @webSocket
 
-        @emittedErrors = []
-        @subject.on "error", (error) => @emittedErrors.push error
-
         @emittedDisconnects = []
         @subject.on "disconnect", => @emittedDisconnects.push arguments
 
@@ -198,14 +195,3 @@ describe "connection.Connection", ->
                 done()
 
             @webSocket.onmessage data: '{"type":"a","b":["c","d"]}'
-
-        it "handles invalid messages", (done) ->
-            @subject.on "error", (error) =>
-                expect(error.message).toEqual 'Unexpected end of input'
-
-                setImmediate =>
-                    expect(@subject._state.isOn).toBe false
-                    expect(@webSocket.close).toHaveBeenCalledWith 4001, "Invalid message received."
-                    done()
-
-            @webSocket.onmessage data: '{'
