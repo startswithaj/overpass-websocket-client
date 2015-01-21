@@ -6067,6 +6067,7 @@ module.exports = AsyncBinaryState = (function() {
     this.set = __bind(this.set, this);
     this.setOff = __bind(this.setOff, this);
     this.setOn = __bind(this.setOn, this);
+    this._targetState = this.isOn;
     this._promise = bluebird.resolve();
   }
 
@@ -6090,10 +6091,10 @@ module.exports = AsyncBinaryState = (function() {
 
   AsyncBinaryState.prototype._set = function(isOn, handler) {
     var method;
-    if (isOn === this.isOn) {
+    if (isOn === this._targetState) {
       return bluebird.resolve();
     }
-    this.isOn = isOn;
+    this._targetState = isOn;
     if (handler != null) {
       method = bluebird.method(handler);
     } else {
@@ -6101,9 +6102,13 @@ module.exports = AsyncBinaryState = (function() {
         return bluebird.resolve();
       };
     }
-    return method()["catch"]((function(_this) {
+    return method().tap((function(_this) {
+      return function() {
+        return _this.isOn = isOn;
+      };
+    })(this))["catch"]((function(_this) {
       return function(error) {
-        _this.isOn = !isOn;
+        _this._targetState = !isOn;
         throw error;
       };
     })(this));
