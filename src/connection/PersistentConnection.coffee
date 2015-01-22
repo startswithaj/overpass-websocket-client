@@ -60,7 +60,7 @@ module.exports = class PersistentConnection extends EventEmitter
     send: (message) => @connection.send message
 
     waitForConnect: ->
-        @_waitForConnect ?= new Promise (resolve, reject) ->
+        @_waitForConnect ?= new Promise (resolve, reject) =>
             @_waitForConnect._overpassResolve = resolve
             @_waitForConnect._overpassReject  = reject
 
