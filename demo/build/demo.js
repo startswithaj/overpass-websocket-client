@@ -6247,7 +6247,7 @@ module.exports = Connection = (function(_super) {
         this._socket.onclose = this._close;
         return this.emit("connect", message.response);
       case "handshake.reject":
-        this._socketResolvers.reject(message.reason);
+        this._socketResolvers.reject(new Error(message.reason));
         this._socketResolvers = null;
         this._socket.onclose = null;
         this._socket = null;

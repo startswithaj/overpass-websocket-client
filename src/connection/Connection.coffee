@@ -77,7 +77,7 @@ module.exports = class Connection extends EventEmitter
                 @_socket.onclose = @_close
                 @emit "connect", message.response
             when "handshake.reject"
-                @_socketResolvers.reject message.reason
+                @_socketResolvers.reject new Error message.reason
                 @_socketResolvers = null
                 @_socket.onclose = null
                 @_socket = null

@@ -103,8 +103,8 @@ describe "connection.Connection", ->
                 done()
 
         it "handles handshake rejections", (done) ->
-            @subject.connect(@request).catch (reason) ->
-                expect(reason).toBe "reasonValue"
+            @subject.connect(@request).catch (error) ->
+                expect(error.message).toBe "reasonValue"
                 done()
 
             setImmediate =>
