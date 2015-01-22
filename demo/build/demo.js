@@ -6304,6 +6304,7 @@ module.exports = PersistentConnection = (function(_super) {
     this.handshakeManager = handshakeManager != null ? handshakeManager : new HandshakeManager();
     this.reconnectWait = reconnectWait != null ? reconnectWait : 3;
     this.keepaliveWait = keepaliveWait != null ? keepaliveWait : 30;
+    this._message = __bind(this._message, this);
     this._reconnect = __bind(this._reconnect, this);
     this._disconnect = __bind(this._disconnect, this);
     this.send = __bind(this.send, this);

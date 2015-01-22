@@ -73,7 +73,7 @@ module.exports = class PersistentConnection extends EventEmitter
 
         @_reconnectInterval = setInterval reconnect, wait
 
-    _message: (message) ->
+    _message: (message) =>
         @emit "message", message
         @emit "message.#{message.type}", message
 
