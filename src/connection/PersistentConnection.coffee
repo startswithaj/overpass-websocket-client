@@ -21,6 +21,7 @@ module.exports = class PersistentConnection extends EventEmitter
         .then (request) => @connection.connect request
         .then (response) =>
             @connection.on "message", @_message
+            @connection.once "disconnect", @_disconnect
 
             keepalive = => #do keepalive
             wait = Math.round @keepaliveWait * 1000

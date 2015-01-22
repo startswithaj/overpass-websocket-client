@@ -6324,6 +6324,7 @@ module.exports = PersistentConnection = (function(_super) {
         }).then(function(response) {
           var keepalive, wait;
           _this.connection.on("message", _this._message);
+          _this.connection.once("disconnect", _this._disconnect);
           keepalive = function() {};
           wait = Math.round(_this.keepaliveWait * 1000);
           _this._keepaliveInterval = setInterval(keepalive, wait);
