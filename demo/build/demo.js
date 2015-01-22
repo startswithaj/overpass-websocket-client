@@ -6096,7 +6096,9 @@ module.exports = AsyncBinaryState = (function() {
     }
     this._targetState = isOn;
     if (handler != null) {
-      method = bluebird.method(handler);
+      method = bluebird.method(function() {
+        return handler();
+      });
     } else {
       method = function() {
         return bluebird.resolve();
@@ -6310,10 +6312,12 @@ module.exports = PersistentConnection = (function(_super) {
   PersistentConnection.prototype.connect = function() {
     return this._state.setOn((function(_this) {
       return function() {
+        var buildRequest;
         _this.connection.once("disconnect", _this._reconnect);
-        return bluebird.method(function() {
+        buildRequest = bluebird.method(function() {
           return _this.handshakeManager.buildRequest();
-        }).then(function(request) {
+        });
+        return buildRequest().then(function(request) {
           return _this.connection.connect(request);
         }).then(function(response) {
           var keepalive, wait;

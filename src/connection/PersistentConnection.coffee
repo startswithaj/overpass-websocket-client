@@ -15,7 +15,9 @@ module.exports = class PersistentConnection extends EventEmitter
     connect: -> @_state.setOn =>
         @connection.once "disconnect", @_reconnect
 
-        bluebird.method => @handshakeManager.buildRequest()
+        buildRequest = bluebird.method => @handshakeManager.buildRequest()
+
+        buildRequest()
         .then (request) => @connection.connect request
         .then (response) =>
             @connection.once "disconnect", @_disconnect
