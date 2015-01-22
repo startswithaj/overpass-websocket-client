@@ -1,5 +1,6 @@
 AsyncBinaryState = require "../AsyncBinaryState"
 bluebird = require "bluebird"
+{Promise} = require "bluebird"
 EventEmitter = require "node-event-emitter"
 HandshakeManager = require "./HandshakeManager"
 
