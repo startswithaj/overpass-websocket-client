@@ -12,7 +12,6 @@ module.exports = class PersistentConnection extends EventEmitter
         @keepaliveWait = 30
     ) ->
         @_state = new AsyncBinaryState()
-        @_waitForConnect = null
         @_waitForConnectResolver = null
 
     connect: -> @_state.setOn =>
@@ -35,15 +34,15 @@ module.exports = class PersistentConnection extends EventEmitter
 
             @emit "connect", response
 
-            @_waitForConnectResolver.resolve response if @_waitForConnect?
+            if @_waitForConnectResolver?
+                @_waitForConnectResolver.resolve response
 
             response
         .catch (error) =>
             @emit "error", error
 
-            if @_waitForConnect
+            if @_waitForConnectResolver?
                 @_waitForConnectResolver.reject error
-                @_waitForConnect = null
                 @_waitForConnectResolver = null
 
             throw error
@@ -61,15 +60,13 @@ module.exports = class PersistentConnection extends EventEmitter
     send: (message) => @connection.send message
 
     waitForConnect: ->
-        return @_waitForConnectResolver.promise if @_waitForConnectResolver?
-
-        @_waitForConnectResolver = Promise.defer()
-        @_waitForConnectResolver.resolve() if @_state.isOn
+        unless @_waitForConnectResolver?
+            @_waitForConnectResolver = Promise.defer()
+            @_waitForConnectResolver.resolve() if @_state.isOn
 
         @_waitForConnectResolver.promise
 
     _disconnect: =>
-        @_waitForConnect = null
         @_waitForConnectResolver = null
 
         clearInterval @_keepaliveInterval

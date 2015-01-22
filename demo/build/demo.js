@@ -6302,7 +6302,6 @@ module.exports = PersistentConnection = (function(_super) {
     this._disconnect = __bind(this._disconnect, this);
     this.send = __bind(this.send, this);
     this._state = new AsyncBinaryState();
-    this._waitForConnect = null;
     this._waitForConnectResolver = null;
   }
 
@@ -6325,15 +6324,14 @@ module.exports = PersistentConnection = (function(_super) {
           _this._keepaliveInterval = setInterval(keepalive, wait);
           _this.handshakeManager.handleResponse(response);
           _this.emit("connect", response);
-          if (_this._waitForConnect != null) {
+          if (_this._waitForConnectResolver != null) {
             _this._waitForConnectResolver.resolve(response);
           }
           return response;
         })["catch"](function(error) {
           _this.emit("error", error);
-          if (_this._waitForConnect) {
+          if (_this._waitForConnectResolver != null) {
             _this._waitForConnectResolver.reject(error);
-            _this._waitForConnect = null;
             _this._waitForConnectResolver = null;
           }
           throw error;
@@ -6362,18 +6360,16 @@ module.exports = PersistentConnection = (function(_super) {
   };
 
   PersistentConnection.prototype.waitForConnect = function() {
-    if (this._waitForConnectResolver != null) {
-      return this._waitForConnectResolver.promise;
-    }
-    this._waitForConnectResolver = Promise.defer();
-    if (this._state.isOn) {
-      this._waitForConnectResolver.resolve();
+    if (this._waitForConnectResolver == null) {
+      this._waitForConnectResolver = Promise.defer();
+      if (this._state.isOn) {
+        this._waitForConnectResolver.resolve();
+      }
     }
     return this._waitForConnectResolver.promise;
   };
 
   PersistentConnection.prototype._disconnect = function() {
-    this._waitForConnect = null;
     this._waitForConnectResolver = null;
     clearInterval(this._keepaliveInterval);
     delete this._keepaliveInterval;
