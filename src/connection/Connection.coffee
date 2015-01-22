@@ -48,10 +48,10 @@ module.exports = class Connection extends EventEmitter
     _open: (request) =>
         @_socket.onmessage = @_message
 
-        @_send \
-            type: "handshake.request",
-            version: "1.0.0",
-            request: request,
+        @_send
+            type: "handshake.request"
+            version: "1.0.0"
+            request: request
 
     _closeDuringConnect: =>
         @_socketResolvers.reject new Error "Unable to connect to server."
