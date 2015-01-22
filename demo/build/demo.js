@@ -6311,6 +6311,7 @@ module.exports = PersistentConnection = (function(_super) {
     this._disconnect = __bind(this._disconnect, this);
     this.send = __bind(this.send, this);
     this._state = new AsyncBinaryState();
+    this._waitForConnect = null;
   }
 
   PersistentConnection.prototype.connect = function() {
@@ -6332,9 +6333,16 @@ module.exports = PersistentConnection = (function(_super) {
           _this._keepaliveInterval = setInterval(keepalive, wait);
           _this.handshakeManager.handleResponse(response);
           _this.emit("connect", response);
+          if (_this._waitForConnect != null) {
+            _this._waitForConnect._overpassResolve(response);
+          }
           return response;
         })["catch"](function(error) {
           _this.emit("error", error);
+          if (_this._waitForConnect) {
+            _this._waitForConnect._overpassReject(error);
+            _this._waitForConnect = null;
+          }
           throw error;
         });
       };
@@ -6361,22 +6369,14 @@ module.exports = PersistentConnection = (function(_super) {
   };
 
   PersistentConnection.prototype.waitForConnect = function() {
-    if (this._state.isOn) {
-      return bluebird.resolve();
-    }
-    return new Promise((function(_this) {
-      return function(resolve, reject) {
-        _this.once("connect", function() {
-          return resolve();
-        });
-        return _this.once("error", function() {
-          return reject();
-        });
-      };
-    })(this));
+    return this._waitForConnect != null ? this._waitForConnect : this._waitForConnect = new Promise(function(resolve, reject) {
+      this._waitForConnect._overpassResolve = resolve;
+      return this._waitForConnect._overpassReject = reject;
+    });
   };
 
   PersistentConnection.prototype._disconnect = function() {
+    this._waitForConnect = null;
     clearInterval(this._keepaliveInterval);
     delete this._keepaliveInterval;
     this._state.setOff();

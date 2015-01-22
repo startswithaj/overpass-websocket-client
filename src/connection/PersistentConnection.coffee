@@ -11,7 +11,9 @@ module.exports = class PersistentConnection extends EventEmitter
         @handshakeManager = new HandshakeManager()
         @reconnectWait = 3
         @keepaliveWait = 30
-    ) -> @_state = new AsyncBinaryState()
+    ) ->
+        @_state = new AsyncBinaryState()
+        @_waitForConnect = null
 
     connect: -> @_state.setOn =>
         @connection.once "disconnect", @_reconnect
@@ -33,9 +35,15 @@ module.exports = class PersistentConnection extends EventEmitter
 
             @emit "connect", response
 
+            @_waitForConnect._overpassResolve response if @_waitForConnect?
+
             response
         .catch (error) =>
             @emit "error", error
+
+            if @_waitForConnect
+                @_waitForConnect._overpassReject error
+                @_waitForConnect = null
 
             throw error
 
@@ -52,13 +60,13 @@ module.exports = class PersistentConnection extends EventEmitter
     send: (message) => @connection.send message
 
     waitForConnect: ->
-        return bluebird.resolve() if @_state.isOn
-
-        new Promise (resolve, reject) =>
-            @once "connect", -> resolve()
-            @once "error", -> reject()
+        @_waitForConnect ?= new Promise (resolve, reject) ->
+            @_waitForConnect._overpassResolve = resolve
+            @_waitForConnect._overpassReject  = reject
 
     _disconnect: =>
+        @_waitForConnect = null
+
         clearInterval @_keepaliveInterval
         delete @_keepaliveInterval
 
