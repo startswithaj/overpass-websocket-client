@@ -6411,12 +6411,14 @@ module.exports = WebSocketFactory = (function() {
 },{}],47:[function(require,module,exports){
 module.exports = {
   Connection: require('./Connection'),
+  HandshakeManager: require('./HandshakeManager'),
+  PersistentConnection: require('./PersistentConnection'),
   WebSocketFactory: require('./WebSocketFactory')
 };
 
 
 
-},{"./Connection":43,"./WebSocketFactory":46}],48:[function(require,module,exports){
+},{"./Connection":43,"./HandshakeManager":44,"./PersistentConnection":45,"./WebSocketFactory":46}],48:[function(require,module,exports){
 module.exports = {
   connection: require('./connection'),
   pubsub: require('./pubsub'),
