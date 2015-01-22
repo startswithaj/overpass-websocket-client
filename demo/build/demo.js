@@ -6280,7 +6280,7 @@ module.exports = HandshakeManager = (function() {
 
 
 },{}],45:[function(require,module,exports){
-var AsyncBinaryState, HandshakeManager, PersistentConnection, bluebird,
+var AsyncBinaryState, EventEmitter, HandshakeManager, PersistentConnection, bluebird,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6288,6 +6288,8 @@ var AsyncBinaryState, HandshakeManager, PersistentConnection, bluebird,
 AsyncBinaryState = require("../AsyncBinaryState");
 
 bluebird = require("bluebird");
+
+EventEmitter = require("node-event-emitter");
 
 HandshakeManager = require("./HandshakeManager");
 
@@ -6390,7 +6392,7 @@ module.exports = PersistentConnection = (function(_super) {
 
 
 
-},{"../AsyncBinaryState":42,"./HandshakeManager":44,"bluebird":4}],46:[function(require,module,exports){
+},{"../AsyncBinaryState":42,"./HandshakeManager":44,"bluebird":4,"node-event-emitter":41}],46:[function(require,module,exports){
 var WebSocketFactory;
 
 module.exports = WebSocketFactory = (function() {

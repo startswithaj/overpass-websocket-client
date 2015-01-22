@@ -1,5 +1,6 @@
 AsyncBinaryState = require "../AsyncBinaryState"
 bluebird = require "bluebird"
+EventEmitter = require "node-event-emitter"
 HandshakeManager = require "./HandshakeManager"
 
 module.exports = class PersistentConnection extends EventEmitter
