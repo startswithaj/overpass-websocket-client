@@ -46,7 +46,7 @@ module.exports = class PersistentConnection extends EventEmitter
 
         @connection.disconnect()
 
-    send: (message) => @connect.send message
+    send: (message) => @connection.send message
 
     waitForConnect: ->
         return bluebird.resolve() if @_state.isOn

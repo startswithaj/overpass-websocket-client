@@ -6350,7 +6350,7 @@ module.exports = PersistentConnection = (function(_super) {
   };
 
   PersistentConnection.prototype.send = function(message) {
-    return this.connect.send(message);
+    return this.connection.send(message);
   };
 
   PersistentConnection.prototype.waitForConnect = function() {
