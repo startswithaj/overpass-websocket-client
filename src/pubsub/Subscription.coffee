@@ -1,9 +1,7 @@
-bluebird = require "bluebird"
+AsyncBinaryState = require "../AsyncBinaryState"
 EventEmitter = require "node-event-emitter"
 regexEscape = require "escape-string-regexp"
-{Promise} = require "bluebird"
-{TimeoutError} = require "bluebird"
-AsyncBinaryState = require "../AsyncBinaryState"
+{Promise, TimeoutError} = require "bluebird"
 
 module.exports = class Subscription extends EventEmitter
 

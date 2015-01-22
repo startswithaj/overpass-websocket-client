@@ -1,6 +1,5 @@
 EventEmitter = require "node-event-emitter"
-bluebird = require "bluebird"
-{Promise, TimeoutError} = bluebird
+{Promise, TimeoutError} = require "bluebird"
 WebSocketFactory = require "./WebSocketFactory"
 AsyncBinaryState = require "../AsyncBinaryState"
 
@@ -13,19 +12,20 @@ module.exports = class Connection extends EventEmitter
     ) ->
         @_state = new AsyncBinaryState()
         @_socket = null
-        @_socketResolvers = null
+        @_connectionResolver = null
 
     connect: (request = {}) =>
         return @_state.setOn =>
-            promise = new Promise (resolve, reject) =>
-                @_socketResolvers = {resolve, reject}
-                @_socket = @webSocketFactory.create @url
-                @_socket.onopen = => @_open request
-                @_socket.onclose = @_closeDuringConnect
+            @_connectionResolver = Promise.defer()
+
+            @_socket = @webSocketFactory.create @url
+            @_socket.onopen = => @_open request
+            @_socket.onclose = @_closeDuringConnect
 
             timeout = Math.round @connectTimeout * 1000
 
-            promise.timeout timeout, "Connection timed out."
+            @_connectionResolver.promise
+            .timeout timeout, "Connection timed out."
             .catch TimeoutError, (error) =>
                 @_socket.close 4001, "Connection handshake timed out."
 
@@ -54,8 +54,8 @@ module.exports = class Connection extends EventEmitter
             request: request
 
     _closeDuringConnect: =>
-        @_socketResolvers.reject new Error "Unable to connect to server."
-        @_socketResolvers = null
+        @_connectionResolver.reject new Error "Unable to connect to server."
+        @_connectionResolver = null
 
     _close: (event) =>
         @_state.setOff()
@@ -72,13 +72,13 @@ module.exports = class Connection extends EventEmitter
 
         switch message.type
             when "handshake.approve"
-                @_socketResolvers.resolve message.response
-                @_socketResolvers = null
+                @_connectionResolver.resolve message.response
+                @_connectionResolver = null
                 @_socket.onclose = @_close
                 @emit "connect", message.response
             when "handshake.reject"
-                @_socketResolvers.reject new Error message.reason
-                @_socketResolvers = null
+                @_connectionResolver.reject new Error message.reason
+                @_connectionResolver = null
                 @_socket.onclose = null
                 @_socket = null
                 @_state.setOff()

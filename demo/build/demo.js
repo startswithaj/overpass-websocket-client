@@ -6055,10 +6055,10 @@ EventEmitter.listenerCount = function(emitter, type) {
 };
 
 },{}],42:[function(require,module,exports){
-var AsyncBinaryState, bluebird,
+var AsyncBinaryState, Promise,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-bluebird = require("bluebird");
+Promise = require("bluebird");
 
 module.exports = AsyncBinaryState = (function() {
   function AsyncBinaryState(isOn) {
@@ -6068,7 +6068,7 @@ module.exports = AsyncBinaryState = (function() {
     this.setOff = __bind(this.setOff, this);
     this.setOn = __bind(this.setOn, this);
     this._targetState = this.isOn;
-    this._promise = bluebird.resolve();
+    this._promise = Promise.resolve();
   }
 
   AsyncBinaryState.prototype.setOn = function(handler) {
@@ -6092,16 +6092,16 @@ module.exports = AsyncBinaryState = (function() {
   AsyncBinaryState.prototype._set = function(isOn, handler) {
     var method;
     if (isOn === this._targetState) {
-      return bluebird.resolve();
+      return Promise.resolve();
     }
     this._targetState = isOn;
     if (handler != null) {
-      method = bluebird.method(function() {
+      method = Promise.method(function() {
         return handler();
       });
     } else {
       method = function() {
-        return bluebird.resolve();
+        return Promise.resolve();
       };
     }
     return method().tap((function(_this) {
@@ -6123,16 +6123,14 @@ module.exports = AsyncBinaryState = (function() {
 
 
 },{"bluebird":4}],43:[function(require,module,exports){
-var AsyncBinaryState, Connection, EventEmitter, Promise, TimeoutError, WebSocketFactory, bluebird,
+var AsyncBinaryState, Connection, EventEmitter, Promise, TimeoutError, WebSocketFactory, _ref,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
 EventEmitter = require("node-event-emitter");
 
-bluebird = require("bluebird");
-
-Promise = bluebird.Promise, TimeoutError = bluebird.TimeoutError;
+_ref = require("bluebird"), Promise = _ref.Promise, TimeoutError = _ref.TimeoutError;
 
 WebSocketFactory = require("./WebSocketFactory");
 
@@ -6155,7 +6153,7 @@ module.exports = Connection = (function(_super) {
     this.connect = __bind(this.connect, this);
     this._state = new AsyncBinaryState();
     this._socket = null;
-    this._socketResolvers = null;
+    this._connectionResolver = null;
   }
 
   Connection.prototype.connect = function(request) {
@@ -6164,20 +6162,15 @@ module.exports = Connection = (function(_super) {
     }
     return this._state.setOn((function(_this) {
       return function() {
-        var promise, timeout;
-        promise = new Promise(function(resolve, reject) {
-          _this._socketResolvers = {
-            resolve: resolve,
-            reject: reject
-          };
-          _this._socket = _this.webSocketFactory.create(_this.url);
-          _this._socket.onopen = function() {
-            return _this._open(request);
-          };
-          return _this._socket.onclose = _this._closeDuringConnect;
-        });
+        var timeout;
+        _this._connectionResolver = Promise.defer();
+        _this._socket = _this.webSocketFactory.create(_this.url);
+        _this._socket.onopen = function() {
+          return _this._open(request);
+        };
+        _this._socket.onclose = _this._closeDuringConnect;
         timeout = Math.round(_this.connectTimeout * 1000);
-        return promise.timeout(timeout, "Connection timed out.")["catch"](TimeoutError, function(error) {
+        return _this._connectionResolver.promise.timeout(timeout, "Connection timed out.")["catch"](TimeoutError, function(error) {
           _this._socket.close(4001, "Connection handshake timed out.");
           throw error;
         });
@@ -6220,8 +6213,8 @@ module.exports = Connection = (function(_super) {
   };
 
   Connection.prototype._closeDuringConnect = function() {
-    this._socketResolvers.reject(new Error("Unable to connect to server."));
-    return this._socketResolvers = null;
+    this._connectionResolver.reject(new Error("Unable to connect to server."));
+    return this._connectionResolver = null;
   };
 
   Connection.prototype._close = function(event) {
@@ -6242,13 +6235,13 @@ module.exports = Connection = (function(_super) {
     }
     switch (message.type) {
       case "handshake.approve":
-        this._socketResolvers.resolve(message.response);
-        this._socketResolvers = null;
+        this._connectionResolver.resolve(message.response);
+        this._connectionResolver = null;
         this._socket.onclose = this._close;
         return this.emit("connect", message.response);
       case "handshake.reject":
-        this._socketResolvers.reject(new Error(message.reason));
-        this._socketResolvers = null;
+        this._connectionResolver.reject(new Error(message.reason));
+        this._connectionResolver = null;
         this._socket.onclose = null;
         this._socket = null;
         return this._state.setOff();
@@ -6283,16 +6276,14 @@ module.exports = HandshakeManager = (function() {
 
 
 },{}],45:[function(require,module,exports){
-var AsyncBinaryState, EventEmitter, HandshakeManager, PersistentConnection, Promise, bluebird,
+var AsyncBinaryState, EventEmitter, HandshakeManager, PersistentConnection, Promise,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
 AsyncBinaryState = require("../AsyncBinaryState");
 
-bluebird = require("bluebird");
-
-Promise = require("bluebird").Promise;
+Promise = require("bluebird");
 
 EventEmitter = require("node-event-emitter");
 
@@ -6312,7 +6303,7 @@ module.exports = PersistentConnection = (function(_super) {
     this.send = __bind(this.send, this);
     this._state = new AsyncBinaryState();
     this._waitForConnect = null;
-    this._waitForConnectResolvers = null;
+    this._waitForConnectResolver = null;
   }
 
   PersistentConnection.prototype.connect = function() {
@@ -6320,7 +6311,7 @@ module.exports = PersistentConnection = (function(_super) {
       return function() {
         var buildRequest;
         _this.connection.once("disconnect", _this._reconnect);
-        buildRequest = bluebird.method(function() {
+        buildRequest = Promise.method(function() {
           return _this.handshakeManager.buildRequest();
         });
         return buildRequest().then(function(request) {
@@ -6335,15 +6326,15 @@ module.exports = PersistentConnection = (function(_super) {
           _this.handshakeManager.handleResponse(response);
           _this.emit("connect", response);
           if (_this._waitForConnect != null) {
-            _this._waitForConnectResolvers.resolve(response);
+            _this._waitForConnectResolver.resolve(response);
           }
           return response;
         })["catch"](function(error) {
           _this.emit("error", error);
           if (_this._waitForConnect) {
-            _this._waitForConnectResolvers.reject(error);
+            _this._waitForConnectResolver.reject(error);
             _this._waitForConnect = null;
-            _this._waitForConnectResolvers = null;
+            _this._waitForConnectResolver = null;
           }
           throw error;
         });
@@ -6371,19 +6362,19 @@ module.exports = PersistentConnection = (function(_super) {
   };
 
   PersistentConnection.prototype.waitForConnect = function() {
-    return this._waitForConnect != null ? this._waitForConnect : this._waitForConnect = new Promise((function(_this) {
-      return function(resolve, reject) {
-        return _this._waitForConnectResolvers = {
-          resolve: resolve,
-          reject: reject
-        };
-      };
-    })(this));
+    if (this._waitForConnectResolver != null) {
+      return this._waitForConnectResolver.promise;
+    }
+    this._waitForConnectResolver = Promise.defer();
+    if (this._state.isOn) {
+      this._waitForConnectResolver.resolve();
+    }
+    return this._waitForConnectResolver.promise;
   };
 
   PersistentConnection.prototype._disconnect = function() {
     this._waitForConnect = null;
-    this._waitForConnectResolvers = null;
+    this._waitForConnectResolver = null;
     clearInterval(this._keepaliveInterval);
     delete this._keepaliveInterval;
     this._state.setOff();
@@ -6502,22 +6493,18 @@ module.exports = Subscriber = (function() {
 
 
 },{"./Subscription":51}],51:[function(require,module,exports){
-var AsyncBinaryState, EventEmitter, Promise, Subscription, TimeoutError, bluebird, regexEscape,
+var AsyncBinaryState, EventEmitter, Promise, Subscription, TimeoutError, regexEscape, _ref,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-bluebird = require("bluebird");
+AsyncBinaryState = require("../AsyncBinaryState");
 
 EventEmitter = require("node-event-emitter");
 
 regexEscape = require("escape-string-regexp");
 
-Promise = require("bluebird").Promise;
-
-TimeoutError = require("bluebird").TimeoutError;
-
-AsyncBinaryState = require("../AsyncBinaryState");
+_ref = require("bluebird"), Promise = _ref.Promise, TimeoutError = _ref.TimeoutError;
 
 module.exports = Subscription = (function(_super) {
   __extends(Subscription, _super);
@@ -6534,11 +6521,11 @@ module.exports = Subscription = (function(_super) {
     this._subscribed = __bind(this._subscribed, this);
     this._state = new AsyncBinaryState();
     atoms = (function() {
-      var _i, _len, _ref, _results;
-      _ref = topic.split(".");
+      var _i, _len, _ref1, _results;
+      _ref1 = topic.split(".");
       _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        atom = _ref[_i];
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        atom = _ref1[_i];
         switch (atom) {
           case "*":
             _results.push("(.+)");
@@ -6628,15 +6615,13 @@ module.exports = {
 
 
 },{"./Publisher":49,"./Subscriber":50}],53:[function(require,module,exports){
-var InvalidMessageError, Promise, Request, Response, ResponseCode, RpcClient, bluebird,
+var InvalidMessageError, Promise, Request, Response, ResponseCode, RpcClient,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __slice = [].slice;
 
-bluebird = require('bluebird');
-
-Promise = require('bluebird').Promise;
-
 InvalidMessageError = require('./error/InvalidMessageError');
+
+Promise = require('bluebird');
 
 Request = require('./message/Request');
 

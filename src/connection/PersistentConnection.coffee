@@ -1,6 +1,5 @@
 AsyncBinaryState = require "../AsyncBinaryState"
-bluebird = require "bluebird"
-{Promise} = require "bluebird"
+Promise = require "bluebird"
 EventEmitter = require "node-event-emitter"
 HandshakeManager = require "./HandshakeManager"
 
@@ -14,12 +13,12 @@ module.exports = class PersistentConnection extends EventEmitter
     ) ->
         @_state = new AsyncBinaryState()
         @_waitForConnect = null
-        @_waitForConnectResolvers = null
+        @_waitForConnectResolver = null
 
     connect: -> @_state.setOn =>
         @connection.once "disconnect", @_reconnect
 
-        buildRequest = bluebird.method => @handshakeManager.buildRequest()
+        buildRequest = Promise.method => @handshakeManager.buildRequest()
 
         buildRequest()
         .then (request) => @connection.connect request
@@ -36,16 +35,16 @@ module.exports = class PersistentConnection extends EventEmitter
 
             @emit "connect", response
 
-            @_waitForConnectResolvers.resolve response if @_waitForConnect?
+            @_waitForConnectResolver.resolve response if @_waitForConnect?
 
             response
         .catch (error) =>
             @emit "error", error
 
             if @_waitForConnect
-                @_waitForConnectResolvers.reject error
+                @_waitForConnectResolver.reject error
                 @_waitForConnect = null
-                @_waitForConnectResolvers = null
+                @_waitForConnectResolver = null
 
             throw error
 
@@ -62,12 +61,16 @@ module.exports = class PersistentConnection extends EventEmitter
     send: (message) => @connection.send message
 
     waitForConnect: ->
-        @_waitForConnect ?= new Promise (resolve, reject) =>
-            @_waitForConnectResolvers = {resolve, reject}
+        return @_waitForConnectResolver.promise if @_waitForConnectResolver?
+
+        @_waitForConnectResolver = Promise.defer()
+        @_waitForConnectResolver.resolve() if @_state.isOn
+
+        @_waitForConnectResolver.promise
 
     _disconnect: =>
         @_waitForConnect = null
-        @_waitForConnectResolvers = null
+        @_waitForConnectResolver = null
 
         clearInterval @_keepaliveInterval
         delete @_keepaliveInterval

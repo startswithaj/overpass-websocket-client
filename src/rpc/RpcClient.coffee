@@ -1,6 +1,5 @@
-bluebird = require 'bluebird'
-{Promise} = require 'bluebird'
 InvalidMessageError = require './error/InvalidMessageError'
+Promise = require 'bluebird'
 Request = require './message/Request'
 Response = require './message/Response'
 ResponseCode = require './message/ResponseCode'
