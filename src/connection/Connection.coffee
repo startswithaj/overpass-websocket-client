@@ -37,12 +37,18 @@ module.exports = class Connection extends EventEmitter
                 @on "disconnect", -> resolve()
                 @_socket.close()
 
-    send: (message) => @_socket.send JSON.stringify message
+    send: (message) =>
+        if @_state.isOn
+            @_send message
+        else
+            throw new Error "Unable to send message. Not connected."
+
+    _send: (message) => @_socket.send JSON.stringify message
 
     _open: (request) =>
         @_socket.onmessage = @_message
 
-        @send \
+        @_send \
             type: "handshake.request",
             version: "1.0.0",
             request: request,

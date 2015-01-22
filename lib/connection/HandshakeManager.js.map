@@ -1,0 +1,10 @@
+{
+  "version": 3,
+  "file": "HandshakeManager.js",
+  "sourceRoot": "../../src/connection/",
+  "sources": [
+    "HandshakeManager.coffee"
+  ],
+  "names": [],
+  "mappings": "AAAA;AAAA,MAAA,gBAAA;;AAAA,EAAA,MAAM,CAAC,OAAP,GAAuB;kCAEnB;;AAAA,+BAAA,YAAA,GAAc,SAAA,GAAA;aAAG,GAAH;IAAA,CAAd,CAAA;;AAAA,+BAEA,cAAA,GAAgB,SAAA,GAAA,CAFhB,CAAA;;4BAAA;;MAFJ,CAAA;AAAA"
+}

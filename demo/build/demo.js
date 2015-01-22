@@ -67,7 +67,7 @@ $(function() {
 
 
 
-},{"../../src":46}],2:[function(require,module,exports){
+},{"../../src":48}],2:[function(require,module,exports){
 /* @preserve
  * The MIT License (MIT)
  * 
@@ -6147,6 +6147,7 @@ module.exports = Connection = (function(_super) {
     this._close = __bind(this._close, this);
     this._closeDuringConnect = __bind(this._closeDuringConnect, this);
     this._open = __bind(this._open, this);
+    this._send = __bind(this._send, this);
     this.send = __bind(this.send, this);
     this.disconnect = __bind(this.disconnect, this);
     this.connect = __bind(this.connect, this);
@@ -6196,12 +6197,20 @@ module.exports = Connection = (function(_super) {
   };
 
   Connection.prototype.send = function(message) {
+    if (this._state.isOn) {
+      return this._send(message);
+    } else {
+      throw new Error("Unable to send message. Not connected.");
+    }
+  };
+
+  Connection.prototype._send = function(message) {
     return this._socket.send(JSON.stringify(message));
   };
 
   Connection.prototype._open = function(request) {
     this._socket.onmessage = this._message;
-    return this.send({
+    return this._send({
       type: "handshake.request",
       version: "1.0.0",
       request: request
@@ -6252,7 +6261,136 @@ module.exports = Connection = (function(_super) {
 
 
 
-},{"../AsyncBinaryState":42,"./WebSocketFactory":44,"bluebird":4,"node-event-emitter":41}],44:[function(require,module,exports){
+},{"../AsyncBinaryState":42,"./WebSocketFactory":46,"bluebird":4,"node-event-emitter":41}],44:[function(require,module,exports){
+var HandshakeManager;
+
+module.exports = HandshakeManager = (function() {
+  function HandshakeManager() {}
+
+  HandshakeManager.prototype.buildRequest = function() {
+    return {};
+  };
+
+  HandshakeManager.prototype.handleResponse = function() {};
+
+  return HandshakeManager;
+
+})();
+
+
+
+},{}],45:[function(require,module,exports){
+var AsyncBinaryState, HandshakeManager, PersistentConnection, bluebird,
+  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+AsyncBinaryState = require("../AsyncBinaryState");
+
+bluebird = require("bluebird");
+
+HandshakeManager = require("./HandshakeManager");
+
+module.exports = PersistentConnection = (function(_super) {
+  __extends(PersistentConnection, _super);
+
+  function PersistentConnection(connection, handshakeManager, reconnectWait, keepaliveWait) {
+    this.connection = connection;
+    this.handshakeManager = handshakeManager != null ? handshakeManager : new HandshakeManager();
+    this.reconnectWait = reconnectWait != null ? reconnectWait : 3;
+    this.keepaliveWait = keepaliveWait != null ? keepaliveWait : 30;
+    this._reconnect = __bind(this._reconnect, this);
+    this._disconnect = __bind(this._disconnect, this);
+    this.send = __bind(this.send, this);
+    this._state = new AsyncBinaryState();
+  }
+
+  PersistentConnection.prototype.connect = function() {
+    return this._state.setOn((function(_this) {
+      return function() {
+        _this.connection.once("disconnect", _this._reconnect);
+        return bluebird.method(function() {
+          return _this.handshakeManager.buildRequest();
+        }).then(function(request) {
+          return _this.connection.connect(request);
+        }).then(function(response) {
+          var keepalive, wait;
+          _this.connection.once("disconnect", _this._disconnect);
+          keepalive = function() {};
+          wait = Math.round(_this.keepaliveWait * 1000);
+          _this._keepaliveInterval = setInterval(keepalive, wait);
+          _this.handshakeManager.handleResponse(response);
+          _this.emit("connect", response);
+          return response;
+        })["catch"](function(error) {
+          _this.emit("error", error);
+          throw error;
+        });
+      };
+    })(this));
+  };
+
+  PersistentConnection.prototype.disconnect = function() {
+    return this._state.setOff((function(_this) {
+      return function() {
+        _this.connection.removeListener("disconnect", _this._reconnect);
+        if (_this._reconnectInterval != null) {
+          clearInterval(_this._reconnectInterval);
+          delete _this._reconnectInterval;
+        }
+        return _this.connection.disconnect();
+      };
+    })(this));
+  };
+
+  PersistentConnection.prototype.send = function(message) {
+    return this.connect.send(message);
+  };
+
+  PersistentConnection.prototype.waitForConnect = function() {
+    if (this._state.isOn) {
+      return bluebird.resolve();
+    }
+    return new Promise((function(_this) {
+      return function(resolve, reject) {
+        _this.once("connect", function() {
+          return resolve();
+        });
+        return _this.once("error", function() {
+          return reject();
+        });
+      };
+    })(this));
+  };
+
+  PersistentConnection.prototype._disconnect = function() {
+    clearInterval(this._keepaliveInterval);
+    delete this._keepaliveInterval;
+    this._state.setOff();
+    return this.emit("disconnect", this);
+  };
+
+  PersistentConnection.prototype._reconnect = function() {
+    var reconnect, wait;
+    reconnect = (function(_this) {
+      return function() {
+        return _this.connect().then(function() {
+          clearInterval(_this._reconnectInterval);
+          return delete _this._reconnectInterval;
+        });
+      };
+    })(this);
+    wait = Math.round(this.reconnectWait * 1000);
+    return this._reconnectInterval = setInterval(reconnect, wait);
+  };
+
+  return PersistentConnection;
+
+})(EventEmitter);
+
+
+
+},{"../AsyncBinaryState":42,"./HandshakeManager":44,"bluebird":4}],46:[function(require,module,exports){
 var WebSocketFactory;
 
 module.exports = WebSocketFactory = (function() {
@@ -6270,7 +6408,7 @@ module.exports = WebSocketFactory = (function() {
 
 
 
-},{}],45:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 module.exports = {
   Connection: require('./Connection'),
   WebSocketFactory: require('./WebSocketFactory')
@@ -6278,7 +6416,7 @@ module.exports = {
 
 
 
-},{"./Connection":43,"./WebSocketFactory":44}],46:[function(require,module,exports){
+},{"./Connection":43,"./WebSocketFactory":46}],48:[function(require,module,exports){
 module.exports = {
   connection: require('./connection'),
   pubsub: require('./pubsub'),
@@ -6288,7 +6426,7 @@ module.exports = {
 
 
 
-},{"./AsyncBinaryState":42,"./connection":45,"./pubsub":50,"./rpc":58}],47:[function(require,module,exports){
+},{"./AsyncBinaryState":42,"./connection":47,"./pubsub":52,"./rpc":60}],49:[function(require,module,exports){
 var Publisher,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -6312,7 +6450,7 @@ module.exports = Publisher = (function() {
 
 
 
-},{}],48:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 var Subscriber, Subscription,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -6336,7 +6474,7 @@ module.exports = Subscriber = (function() {
 
 
 
-},{"./Subscription":49}],49:[function(require,module,exports){
+},{"./Subscription":51}],51:[function(require,module,exports){
 var AsyncBinaryState, EventEmitter, Promise, Subscription, TimeoutError, bluebird, regexEscape,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __hasProp = {}.hasOwnProperty,
@@ -6454,7 +6592,7 @@ module.exports = Subscription = (function(_super) {
 
 
 
-},{"../AsyncBinaryState":42,"bluebird":4,"escape-string-regexp":39,"node-event-emitter":41}],50:[function(require,module,exports){
+},{"../AsyncBinaryState":42,"bluebird":4,"escape-string-regexp":39,"node-event-emitter":41}],52:[function(require,module,exports){
 module.exports = {
   Publisher: require('./Publisher'),
   Subscriber: require('./Subscriber')
@@ -6462,7 +6600,7 @@ module.exports = {
 
 
 
-},{"./Publisher":47,"./Subscriber":48}],51:[function(require,module,exports){
+},{"./Publisher":49,"./Subscriber":50}],53:[function(require,module,exports){
 var InvalidMessageError, Promise, Request, Response, ResponseCode, RpcClient, bluebird,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __slice = [].slice;
@@ -6559,7 +6697,7 @@ module.exports = RpcClient = (function() {
 
 
 
-},{"./error/InvalidMessageError":54,"./message/Request":59,"./message/Response":60,"./message/ResponseCode":61,"bluebird":4}],52:[function(require,module,exports){
+},{"./error/InvalidMessageError":56,"./message/Request":61,"./message/Response":62,"./message/ResponseCode":63,"bluebird":4}],54:[function(require,module,exports){
 var ExecutionError, ResponseCode,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6580,7 +6718,7 @@ module.exports = ExecutionError = (function(_super) {
 
 
 
-},{"../message/ResponseCode":61}],53:[function(require,module,exports){
+},{"../message/ResponseCode":63}],55:[function(require,module,exports){
 var InvalidArgumentsError, ResponseCode,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6601,7 +6739,7 @@ module.exports = InvalidArgumentsError = (function(_super) {
 
 
 
-},{"../message/ResponseCode":61}],54:[function(require,module,exports){
+},{"../message/ResponseCode":63}],56:[function(require,module,exports){
 var InvalidMessageError, ResponseCode,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6622,7 +6760,7 @@ module.exports = InvalidMessageError = (function(_super) {
 
 
 
-},{"../message/ResponseCode":61}],55:[function(require,module,exports){
+},{"../message/ResponseCode":63}],57:[function(require,module,exports){
 var TimeoutError,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6641,7 +6779,7 @@ module.exports = TimeoutError = (function(_super) {
 
 
 
-},{}],56:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 var ResponseCode, UnknownProcedureError,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6663,7 +6801,7 @@ module.exports = UnknownProcedureError = (function(_super) {
 
 
 
-},{"../message/ResponseCode":61}],57:[function(require,module,exports){
+},{"../message/ResponseCode":63}],59:[function(require,module,exports){
 module.exports = {
   ExecutionError: require('./ExecutionError'),
   InvalidArgumentsError: require('./InvalidArgumentsError'),
@@ -6674,7 +6812,7 @@ module.exports = {
 
 
 
-},{"./ExecutionError":52,"./InvalidArgumentsError":53,"./InvalidMessageError":54,"./TimeoutError":55,"./UnknownProcedureError":56}],58:[function(require,module,exports){
+},{"./ExecutionError":54,"./InvalidArgumentsError":55,"./InvalidMessageError":56,"./TimeoutError":57,"./UnknownProcedureError":58}],60:[function(require,module,exports){
 module.exports = {
   error: require('./error'),
   message: require('./message'),
@@ -6683,7 +6821,7 @@ module.exports = {
 
 
 
-},{"./RpcClient":51,"./error":57,"./message":62}],59:[function(require,module,exports){
+},{"./RpcClient":53,"./error":59,"./message":64}],61:[function(require,module,exports){
 var Request,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -6704,7 +6842,7 @@ module.exports = Request = (function() {
 
 
 
-},{}],60:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 var ExecutionError, InvalidMessageError, Response, ResponseCode, UnknownProcedureError,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -6749,7 +6887,7 @@ module.exports = Response = (function() {
 
 
 
-},{"../error/ExecutionError":52,"../error/InvalidMessageError":54,"../error/UnknownProcedureError":56,"./ResponseCode":61}],61:[function(require,module,exports){
+},{"../error/ExecutionError":54,"../error/InvalidMessageError":56,"../error/UnknownProcedureError":58,"./ResponseCode":63}],63:[function(require,module,exports){
 var Enum;
 
 Enum = require('enum');
@@ -6764,7 +6902,7 @@ module.exports = new Enum({
 
 
 
-},{"enum":37}],62:[function(require,module,exports){
+},{"enum":37}],64:[function(require,module,exports){
 module.exports = {
   Request: require('./Request'),
   Response: require('./Response'),
@@ -6773,4 +6911,4 @@ module.exports = {
 
 
 
-},{"./Request":59,"./Response":60,"./ResponseCode":61}]},{},[42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,1]);
+},{"./Request":61,"./Response":62,"./ResponseCode":63}]},{},[42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,1]);
