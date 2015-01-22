@@ -6253,6 +6253,7 @@ module.exports = Connection = (function(_super) {
         this._socket = null;
         return this._state.setOff();
       default:
+        this.emit("message", message);
         return this.emit("message." + message.type, message);
     }
   };
@@ -6321,7 +6322,7 @@ module.exports = PersistentConnection = (function(_super) {
           return _this.connection.connect(request);
         }).then(function(response) {
           var keepalive, wait;
-          _this.connection.once("disconnect", _this._disconnect);
+          _this.connection.on("message", _this._message);
           keepalive = function() {};
           wait = Math.round(_this.keepaliveWait * 1000);
           _this._keepaliveInterval = setInterval(keepalive, wait);
@@ -6344,7 +6345,9 @@ module.exports = PersistentConnection = (function(_super) {
           clearInterval(_this._reconnectInterval);
           delete _this._reconnectInterval;
         }
-        return _this.connection.disconnect();
+        return _this.connection.disconnect().then(function() {
+          return _this.connection.removeListener("message", _this._message);
+        });
       };
     })(this));
   };
@@ -6388,6 +6391,11 @@ module.exports = PersistentConnection = (function(_super) {
     })(this);
     wait = Math.round(this.reconnectWait * 1000);
     return this._reconnectInterval = setInterval(reconnect, wait);
+  };
+
+  PersistentConnection.prototype._message = function(message) {
+    this.emit("message", message);
+    return this.emit("message." + message.type, message);
   };
 
   return PersistentConnection;

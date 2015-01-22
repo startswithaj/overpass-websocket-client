@@ -189,7 +189,14 @@ describe "connection.Connection", ->
                 @webSocket.onopen()
                 @webSocket.onmessage data: '{"type":"handshake.approve","response":"responseValue"}'
 
-        it "handles valid messages", (done) ->
+        it "emits generic messages", (done) ->
+            @subject.on "message", (message) ->
+                expect(message).toEqual type: "a", b: ["c", "d"]
+                done()
+
+            @webSocket.onmessage data: '{"type":"a","b":["c","d"]}'
+
+        it "emits messages with type", (done) ->
             @subject.on "message.a", (message) ->
                 expect(message).toEqual type: "a", b: ["c", "d"]
                 done()

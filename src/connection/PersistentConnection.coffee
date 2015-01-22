@@ -20,7 +20,7 @@ module.exports = class PersistentConnection extends EventEmitter
         buildRequest()
         .then (request) => @connection.connect request
         .then (response) =>
-            @connection.once "disconnect", @_disconnect
+            @connection.on "message", @_message
 
             keepalive = => #do keepalive
             wait = Math.round @keepaliveWait * 1000
@@ -44,7 +44,8 @@ module.exports = class PersistentConnection extends EventEmitter
             clearInterval @_reconnectInterval
             delete @_reconnectInterval
 
-        @connection.disconnect()
+        @connection.disconnect().then =>
+            @connection.removeListener "message", @_message
 
     send: (message) => @connection.send message
 
@@ -71,3 +72,8 @@ module.exports = class PersistentConnection extends EventEmitter
         wait = Math.round @reconnectWait * 1000
 
         @_reconnectInterval = setInterval reconnect, wait
+
+    _message: (message) ->
+        @emit "message", message
+        @emit "message.#{message.type}", message
+

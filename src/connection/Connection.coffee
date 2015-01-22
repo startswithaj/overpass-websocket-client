@@ -83,4 +83,5 @@ module.exports = class Connection extends EventEmitter
                 @_socket = null
                 @_state.setOff()
             else
+                @emit "message", message
                 @emit "message.#{message.type}", message
