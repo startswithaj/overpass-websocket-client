@@ -25,7 +25,7 @@ module.exports = class PersistentConnection extends EventEmitter
             @connection.on "message", @_message
             @connection.once "disconnect", @_disconnect
 
-            keepalive = => #do keepalive
+            keepalive = => @send type: "connection.heartbeat"
             wait = Math.round @keepaliveWait * 1000
 
             @_keepaliveInterval = setInterval keepalive, wait
