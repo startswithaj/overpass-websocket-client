@@ -6330,10 +6330,6 @@ module.exports = PersistentConnection = (function(_super) {
           return response;
         })["catch"](function(error) {
           _this.emit("error", error);
-          if (_this._waitForConnectResolver != null) {
-            _this._waitForConnectResolver.reject(error);
-            _this._waitForConnectResolver = null;
-          }
           throw error;
         });
       };

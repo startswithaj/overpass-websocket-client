@@ -41,10 +41,6 @@ module.exports = class PersistentConnection extends EventEmitter
         .catch (error) =>
             @emit "error", error
 
-            if @_waitForConnectResolver?
-                @_waitForConnectResolver.reject error
-                @_waitForConnectResolver = null
-
             throw error
 
     disconnect: -> @_state.setOff =>
