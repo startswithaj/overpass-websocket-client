@@ -74,9 +74,11 @@ module.exports = class PersistentConnection extends EventEmitter
 
     _reconnect: =>
         reconnect = =>
-            @connect().then =>
+            @connect()
+            .then =>
                 clearInterval @_reconnectInterval
                 delete @_reconnectInterval
+            .catch -> # error is emitted
         wait = Math.round @reconnectWait * 1000
 
         @_reconnectInterval = setInterval reconnect, wait

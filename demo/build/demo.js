@@ -6380,7 +6380,7 @@ module.exports = PersistentConnection = (function(_super) {
         return _this.connect().then(function() {
           clearInterval(_this._reconnectInterval);
           return delete _this._reconnectInterval;
-        });
+        })["catch"](function() {});
       };
     })(this);
     wait = Math.round(this.reconnectWait * 1000);
