@@ -16,15 +16,18 @@ module.exports = class PersistentConnection extends EventEmitter
         @_waitForConnectResolver = null
 
     connect: -> @_state.setOn =>
-        @connection.once "disconnect", @_reconnect unless @_reconnectInterval?
-
         buildRequest = Promise.method => @handshakeManager.buildRequest()
 
         buildRequest()
         .then (request) => @connection.connect request
+        .catch (error) =>
+            @_reconnect()
+
+            throw error
         .then (response) =>
             @connection.on "message", @_message
             @connection.once "disconnect", @_disconnect
+            @connection.once "disconnect", @_reconnect
 
             keepalive = => @send type: "connection.heartbeat"
             wait = Math.round @keepaliveWait * 1000
@@ -40,6 +43,9 @@ module.exports = class PersistentConnection extends EventEmitter
 
             response
         .catch (error) =>
+            @connection.removeListener "message", @_message
+            @connection.removeListener "disconnect", @_disconnect
+            @connection.removeListener "disconnect", @_reconnect
             @emit "error", error
 
             throw error
@@ -75,20 +81,20 @@ module.exports = class PersistentConnection extends EventEmitter
 
     _reconnect: =>
         reconnect = =>
-            ++@_reconnectCount
+            isLastAttempt = ++@_reconnectCount >= @reconnectLimit
 
-            @connect()
-            .then =>
+            if isLastAttempt
                 clearInterval @_reconnectInterval
                 delete @_reconnectInterval
-            .catch ->
-                if @_reconnectCount >= @reconnectLimit
-                    clearInterval @_reconnectInterval
-                    delete @_reconnectInterval
 
-                    if @_waitForConnectResolver?
-                        @_waitForConnectResolver.reject \
-                            new Error "Unable to connect to server."
+            @connect()
+            .tap =>
+                clearInterval @_reconnectInterval
+                delete @_reconnectInterval
+            .catch (error) =>
+                if isLastAttempt and @_waitForConnectResolver?
+                    @_waitForConnectResolver.reject error
+
         wait = Math.round @reconnectWait * 1000
 
         @_reconnectCount = 0
