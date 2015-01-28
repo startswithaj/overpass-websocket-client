@@ -6308,6 +6308,25 @@ module.exports = PersistentConnection = (function(_super) {
   }
 
   PersistentConnection.prototype.connect = function() {
+    return this._connect();
+  };
+
+  PersistentConnection.prototype.disconnect = function() {
+    return this._state.setOff((function(_this) {
+      return function() {
+        _this.connection.removeListener("disconnect", _this._reconnect);
+        _this._cancelReconnect();
+        return _this.connection.disconnect().then(function() {
+          return _this.connection.removeListener("message", _this._message);
+        });
+      };
+    })(this));
+  };
+
+  PersistentConnection.prototype._connect = function(isReconnect) {
+    if (isReconnect == null) {
+      isReconnect = false;
+    }
     return this._state.setOn((function(_this) {
       return function() {
         var buildRequest;
@@ -6317,7 +6336,9 @@ module.exports = PersistentConnection = (function(_super) {
         return buildRequest().then(function(request) {
           return _this.connection.connect(request);
         })["catch"](function(error) {
-          _this._reconnect();
+          if (!isReconnect) {
+            _this._reconnect();
+          }
           throw error;
         }).then(function(response) {
           var keepalive, wait;
@@ -6343,18 +6364,6 @@ module.exports = PersistentConnection = (function(_super) {
           _this.connection.removeListener("disconnect", _this._reconnect);
           _this.emit("error", error);
           throw error;
-        });
-      };
-    })(this));
-  };
-
-  PersistentConnection.prototype.disconnect = function() {
-    return this._state.setOff((function(_this) {
-      return function() {
-        _this.connection.removeListener("disconnect", _this._reconnect);
-        _this._cancelReconnect();
-        return _this.connection.disconnect().then(function() {
-          return _this.connection.removeListener("message", _this._message);
         });
       };
     })(this));
@@ -6409,7 +6418,7 @@ module.exports = PersistentConnection = (function(_super) {
     if (isLastAttempt) {
       this._cancelReconnect();
     }
-    return this.connect().tap((function(_this) {
+    return this._connect(true).tap((function(_this) {
       return function() {
         return _this._cancelReconnect();
       };

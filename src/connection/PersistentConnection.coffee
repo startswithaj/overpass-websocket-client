@@ -15,13 +15,23 @@ module.exports = class PersistentConnection extends EventEmitter
         @_state = new AsyncBinaryState()
         @_waitForConnectResolver = null
 
-    connect: -> @_state.setOn =>
+    connect: -> @_connect()
+
+    disconnect: -> @_state.setOff =>
+        @connection.removeListener "disconnect", @_reconnect
+
+        @_cancelReconnect()
+
+        @connection.disconnect().then =>
+            @connection.removeListener "message", @_message
+
+    _connect: (isReconnect = false) -> @_state.setOn =>
         buildRequest = Promise.method => @handshakeManager.buildRequest()
 
         buildRequest()
         .then (request) => @connection.connect request
         .catch (error) =>
-            @_reconnect()
+            @_reconnect() unless isReconnect
 
             throw error
         .then (response) =>
@@ -49,14 +59,6 @@ module.exports = class PersistentConnection extends EventEmitter
             @emit "error", error
 
             throw error
-
-    disconnect: -> @_state.setOff =>
-        @connection.removeListener "disconnect", @_reconnect
-
-        @_cancelReconnect()
-
-        @connection.disconnect().then =>
-            @connection.removeListener "message", @_message
 
     send: (message) => @connection.send message
 
@@ -97,7 +99,7 @@ module.exports = class PersistentConnection extends EventEmitter
 
         @_cancelReconnect() if isLastAttempt
 
-        @connect()
+        @_connect true
         .tap => @_cancelReconnect()
         .catch (error) =>
             if isLastAttempt
@@ -109,4 +111,3 @@ module.exports = class PersistentConnection extends EventEmitter
     _message: (message) =>
         @emit "message", message
         @emit "message.#{message.type}", message
-
