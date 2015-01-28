@@ -6426,8 +6426,9 @@ module.exports = PersistentConnection = (function(_super) {
       return function(error) {
         if (isLastAttempt) {
           if (_this._waitForConnectResolver != null) {
-            return _this._waitForConnectResolver.reject(error);
+            _this._waitForConnectResolver.reject(error);
           }
+          return _this.emit("reconnectFailure", error, _this);
         } else {
           return _this._scheduleReconnect();
         }

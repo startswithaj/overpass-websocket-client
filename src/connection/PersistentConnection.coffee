@@ -105,6 +105,8 @@ module.exports = class PersistentConnection extends EventEmitter
             if isLastAttempt
                 if @_waitForConnectResolver?
                     @_waitForConnectResolver.reject error
+
+                @emit "reconnectFailure", error, @
             else
                 @_scheduleReconnect()
 
