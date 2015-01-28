@@ -53,9 +53,7 @@ module.exports = class PersistentConnection extends EventEmitter
     disconnect: -> @_state.setOff =>
         @connection.removeListener "disconnect", @_reconnect
 
-        if @_reconnectInterval?
-            clearInterval @_reconnectInterval
-            delete @_reconnectInterval
+        @_cancelReconnect()
 
         @connection.disconnect().then =>
             @connection.removeListener "message", @_message
@@ -80,27 +78,33 @@ module.exports = class PersistentConnection extends EventEmitter
         @emit "disconnect", @
 
     _reconnect: =>
-        return if @_reconnectInterval?
-
-        reconnect = =>
-            isLastAttempt = ++@_reconnectCount >= @reconnectLimit
-
-            if isLastAttempt
-                clearInterval @_reconnectInterval
-                delete @_reconnectInterval
-
-            @connect()
-            .tap =>
-                clearInterval @_reconnectInterval
-                delete @_reconnectInterval
-            .catch (error) =>
-                if isLastAttempt and @_waitForConnectResolver?
-                    @_waitForConnectResolver.reject error
-
-        wait = Math.round @reconnectWait * 1000
+        return if @_reconnectTimeout?
 
         @_reconnectCount = 0
-        @_reconnectInterval = setInterval reconnect, wait
+        @_scheduleReconnect()
+
+    _scheduleReconnect: ->
+        wait = Math.round @reconnectWait * 1000
+        @_reconnectTimeout = setTimeout @_handleReconnect, wait
+
+    _cancelReconnect: ->
+        if @_reconnectTimeout?
+            clearTimeout @_reconnectTimeout
+            delete @_reconnectTimeout
+
+    _handleReconnect: =>
+        isLastAttempt = ++@_reconnectCount >= @reconnectLimit
+
+        @_cancelReconnect() if isLastAttempt
+
+        @connect()
+        .tap => @_cancelReconnect()
+        .catch (error) =>
+            if isLastAttempt
+                if @_waitForConnectResolver?
+                    @_waitForConnectResolver.reject error
+            else
+                @_scheduleReconnect()
 
     _message: (message) =>
         @emit "message", message
