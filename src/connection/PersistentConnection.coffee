@@ -9,13 +9,14 @@ module.exports = class PersistentConnection extends EventEmitter
         @connection
         @handshakeManager = new HandshakeManager()
         @reconnectWait = 3
+        @reconnectLimit = 20
         @keepaliveWait = 30
     ) ->
         @_state = new AsyncBinaryState()
         @_waitForConnectResolver = null
 
     connect: -> @_state.setOn =>
-        @connection.once "disconnect", @_reconnect
+        @connection.once "disconnect", @_reconnect unless @_reconnectInterval?
 
         buildRequest = Promise.method => @handshakeManager.buildRequest()
 
@@ -74,13 +75,23 @@ module.exports = class PersistentConnection extends EventEmitter
 
     _reconnect: =>
         reconnect = =>
+            ++@_reconnectCount
+
             @connect()
             .then =>
                 clearInterval @_reconnectInterval
                 delete @_reconnectInterval
-            .catch -> # error is emitted
+            .catch ->
+                if @_reconnectCount >= @reconnectLimit
+                    clearInterval @_reconnectInterval
+                    delete @_reconnectInterval
+
+                    if @_waitForConnectResolver?
+                        @_waitForConnectResolver.reject \
+                            new Error "Unable to connect to server."
         wait = Math.round @reconnectWait * 1000
 
+        @_reconnectCount = 0
         @_reconnectInterval = setInterval reconnect, wait
 
     _message: (message) =>
