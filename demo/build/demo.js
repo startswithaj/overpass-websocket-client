@@ -6386,6 +6386,9 @@ module.exports = PersistentConnection = (function(_super) {
 
   PersistentConnection.prototype._reconnect = function() {
     var reconnect, wait;
+    if (this._reconnectInterval != null) {
+      return;
+    }
     reconnect = (function(_this) {
       return function() {
         var isLastAttempt;

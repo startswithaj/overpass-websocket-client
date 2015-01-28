@@ -80,6 +80,8 @@ module.exports = class PersistentConnection extends EventEmitter
         @emit "disconnect", @
 
     _reconnect: =>
+        return if @_reconnectInterval?
+
         reconnect = =>
             isLastAttempt = ++@_reconnectCount >= @reconnectLimit
 
