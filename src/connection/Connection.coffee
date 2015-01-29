@@ -15,7 +15,7 @@ module.exports = class Connection extends EventEmitter
         @_connectionResolver = null
 
     connect: (request = {}) =>
-        return @_state.setOn =>
+        return @_connectPromise = @_state.setOn =>
             @_connectionResolver = Promise.defer()
 
             @_socket = @webSocketFactory.create @url
@@ -72,10 +72,12 @@ module.exports = class Connection extends EventEmitter
 
         switch message.type
             when "handshake.approve"
+                @_connectPromise
+                .then => @emit "connect", message.response
+
                 @_connectionResolver.resolve message.response
                 @_connectionResolver = null
                 @_socket.onclose = @_close
-                @emit "connect", message.response
             when "handshake.reject"
                 @_connectionResolver.reject new Error message.reason
                 @_connectionResolver = null
