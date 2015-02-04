@@ -149,35 +149,26 @@ describe "connection.Connection", ->
             it "can disconnect", (done) ->
                 @disconnectPromise = @subject.disconnect()
                 @disconnectPromise.then =>
-                    expect(@subject._state.isOn).toBe false
-                    expect(@emittedDisconnects).toEqual [[111, 'reason']]
-                    done()
-
-                setImmediate =>
-                    @webSocket.onclose code: 111, reason: 'reason'
+                    setImmediate =>
+                        expect(@subject._state.isOn).toBe false
+                        expect(@emittedDisconnects).toEqual [[1000, "Connection terminated by client."]]
+                        done()
 
             it "can disconnect concurrently", (done) ->
                 @subject.disconnect()
                 @disconnectPromise = @subject.disconnect()
                 @disconnectPromise.then =>
-                    expect(@subject._state.isOn).toBe false
-                    expect(@emittedDisconnects).toEqual [[111, 'reason']]
-                    done()
-
-                setImmediate =>
-                    @webSocket.onclose code: 111, reason: 'reason'
+                    setImmediate =>
+                        expect(@emittedDisconnects).toEqual [[1000, "Connection terminated by client."]]
+                        done()
 
             it "can disconnect sequentially", (done) ->
                 @disconnectPromise = @subject.disconnect()
-                @disconnectPromise.then =>
-                    @subject.disconnect()
+                @disconnectPromise.then => @subject.disconnect()
                 .then =>
-                    expect(@subject._state.isOn).toBe false
-                    expect(@emittedDisconnects).toEqual [[111, 'reason']]
-                    done()
-
-                setImmediate =>
-                    @webSocket.onclose code: 111, reason: 'reason'
+                    setImmediate =>
+                        expect(@emittedDisconnects).toEqual [[1000, "Connection terminated by client."]]
+                        done()
 
     describe "after successfully connecting", ->
 

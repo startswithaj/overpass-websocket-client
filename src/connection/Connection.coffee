@@ -32,10 +32,24 @@ module.exports = class Connection extends EventEmitter
                 throw error
 
     disconnect: =>
-        return @_state.setOff =>
-            return new Promise (resolve, reject) =>
-                @on "disconnect", -> resolve()
-                @_socket.close()
+        deferred = Promise.defer();
+
+        @_state.setOff =>
+            deferred.promise
+            .tap =>
+                @emit "disconnect", 1000, "Connection terminated by client."
+            .catch ->
+
+            @_socket.onopen = ->
+            @_socket.onclose = ->
+            @_socket.onmessage = ->
+
+            @_socket.close()
+            @_socket = null
+
+        deferred.resolve()
+
+        return deferred.promise
 
     send: (message) =>
         if @_state.isOn

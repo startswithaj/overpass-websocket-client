@@ -6179,16 +6179,22 @@ module.exports = Connection = (function(_super) {
   };
 
   Connection.prototype.disconnect = function() {
-    return this._state.setOff((function(_this) {
+    var deferred;
+    deferred = Promise.defer();
+    this._state.setOff((function(_this) {
       return function() {
-        return new Promise(function(resolve, reject) {
-          _this.on("disconnect", function() {
-            return resolve();
-          });
-          return _this._socket.close();
-        });
+        deferred.promise.tap(function() {
+          return _this.emit("disconnect", 1000, "Connection terminated by client.");
+        })["catch"](function() {});
+        _this._socket.onopen = function() {};
+        _this._socket.onclose = function() {};
+        _this._socket.onmessage = function() {};
+        _this._socket.close();
+        return _this._socket = null;
       };
     })(this));
+    deferred.resolve();
+    return deferred.promise;
   };
 
   Connection.prototype.send = function(message) {
