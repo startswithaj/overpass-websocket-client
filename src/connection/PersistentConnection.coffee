@@ -77,7 +77,7 @@ module.exports = class PersistentConnection extends EventEmitter
 
         @_state.setOff()
 
-        @emit "disconnect", @
+        @emit "disconnect", arguments...
 
     _reconnect: =>
         return if @_reconnectTimeout?
@@ -111,5 +111,5 @@ module.exports = class PersistentConnection extends EventEmitter
                 @_scheduleReconnect()
 
     _message: (message) =>
-        @emit "message", message
-        @emit "message.#{message.type}", message
+        @emit "message", arguments...
+        @emit "message.#{message.type}", arguments...
