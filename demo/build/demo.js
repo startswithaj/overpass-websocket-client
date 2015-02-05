@@ -6643,6 +6643,7 @@ module.exports = PersistentConnection = (function(_super) {
     if (isLastAttempt) {
       this._cancelReconnect();
     }
+    this.emit("reconnect", this._reconnectCount);
     return this._connect(true).tap((function(_this) {
       return function() {
         return _this._cancelReconnect();

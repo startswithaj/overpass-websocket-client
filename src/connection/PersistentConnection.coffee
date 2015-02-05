@@ -102,6 +102,8 @@ module.exports = class PersistentConnection extends EventEmitter
 
         @_cancelReconnect() if isLastAttempt
 
+        @emit "reconnect", @_reconnectCount
+
         @_connect true
         .tap => @_cancelReconnect()
         .catch (error) =>
