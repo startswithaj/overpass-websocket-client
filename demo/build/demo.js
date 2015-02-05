@@ -67,7 +67,7 @@ $(function() {
 
 
 
-},{"../../src":48}],2:[function(require,module,exports){
+},{"../../src":51}],2:[function(require,module,exports){
 /* @preserve
  * The MIT License (MIT)
  * 
@@ -5759,6 +5759,217 @@ process.chdir = function (dir) {
 
 },{}],41:[function(require,module,exports){
 /**
+ * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+ * Build: `lodash modern modularize exports="npm" -o ./`
+ * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+ * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+ * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+ * Available under MIT license <https://lodash.com/license>
+ */
+var baseRandom = require('lodash._baserandom'),
+    isIterateeCall = require('lodash._isiterateecall');
+
+/* Native method references for those with the same name as other `lodash` methods. */
+var nativeMin = Math.min,
+    nativeRandom = Math.random;
+
+/**
+ * Produces a random number between `min` and `max` (inclusive). If only one
+ * argument is provided a number between `0` and the given number is returned.
+ * If `floating` is `true`, or either `min` or `max` are floats, a floating-point
+ * number is returned instead of an integer.
+ *
+ * @static
+ * @memberOf _
+ * @category Number
+ * @param {number} [min=0] The minimum possible value.
+ * @param {number} [max=1] The maximum possible value.
+ * @param {boolean} [floating] Specify returning a floating-point number.
+ * @returns {number} Returns the random number.
+ * @example
+ *
+ * _.random(0, 5);
+ * // => an integer between 0 and 5
+ *
+ * _.random(5);
+ * // => also an integer between 0 and 5
+ *
+ * _.random(5, true);
+ * // => a floating-point number between 0 and 5
+ *
+ * _.random(1.2, 5.2);
+ * // => a floating-point number between 1.2 and 5.2
+ */
+function random(min, max, floating) {
+  if (floating && isIterateeCall(min, max, floating)) {
+    max = floating = null;
+  }
+  var noMin = min == null,
+      noMax = max == null;
+
+  if (floating == null) {
+    if (noMax && typeof min == 'boolean') {
+      floating = min;
+      min = 1;
+    }
+    else if (typeof max == 'boolean') {
+      floating = max;
+      noMax = true;
+    }
+  }
+  if (noMin && noMax) {
+    max = 1;
+    noMax = false;
+  }
+  min = +min || 0;
+  if (noMax) {
+    max = min;
+    min = 0;
+  } else {
+    max = +max || 0;
+  }
+  if (floating || min % 1 || max % 1) {
+    var rand = nativeRandom();
+    return nativeMin(min + (rand * (max - min + parseFloat('1e-' + ((rand + '').length - 1)))), max);
+  }
+  return baseRandom(min, max);
+}
+
+module.exports = random;
+
+},{"lodash._baserandom":42,"lodash._isiterateecall":43}],42:[function(require,module,exports){
+/**
+ * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+ * Build: `lodash modern modularize exports="npm" -o ./`
+ * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+ * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+ * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+ * Available under MIT license <https://lodash.com/license>
+ */
+
+/** Native method references. */
+var floor = Math.floor;
+
+/* Native method references for those with the same name as other `lodash` methods. */
+var nativeRandom = Math.random;
+
+/**
+ * The base implementation of `_.random` without support for argument juggling
+ * and returning floating-point numbers.
+ *
+ * @private
+ * @param {number} min The minimum possible value.
+ * @param {number} max The maximum possible value.
+ * @returns {number} Returns the random number.
+ */
+function baseRandom(min, max) {
+  return min + floor(nativeRandom() * (max - min + 1));
+}
+
+module.exports = baseRandom;
+
+},{}],43:[function(require,module,exports){
+/**
+ * lodash 3.0.1 (Custom Build) <https://lodash.com/>
+ * Build: `lodash modern modularize exports="npm" -o ./`
+ * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+ * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+ * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+ * Available under MIT license <https://lodash.com/license>
+ */
+
+/**
+ * Used as the maximum length of an array-like value.
+ * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-number.max_safe_integer)
+ * for more details.
+ */
+var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
+
+/**
+ * Checks if `value` is a valid array-like index.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
+ * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
+ */
+function isIndex(value, length) {
+  value = +value;
+  length = length == null ? MAX_SAFE_INTEGER : length;
+  return value > -1 && value % 1 == 0 && value < length;
+}
+
+/**
+ * Checks if the provided arguments are from an iteratee call.
+ *
+ * @private
+ * @param {*} value The potential iteratee value argument.
+ * @param {*} index The potential iteratee index or key argument.
+ * @param {*} object The potential iteratee object argument.
+ * @returns {boolean} Returns `true` if the arguments are from an iteratee call, else `false`.
+ */
+function isIterateeCall(value, index, object) {
+  if (!isObject(object)) {
+    return false;
+  }
+  var type = typeof index;
+  if (type == 'number') {
+    var length = object.length,
+        prereq = isLength(length) && isIndex(index, length);
+  } else {
+    prereq = type == 'string' && index in object;
+  }
+  return prereq && object[index] === value;
+}
+
+/**
+ * Checks if `value` is a valid array-like length.
+ *
+ * **Note:** This function is based on ES `ToLength`. See the
+ * [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
+ * for more details.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+ */
+function isLength(value) {
+  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+}
+
+/**
+ * Checks if `value` is the language type of `Object`.
+ * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+ *
+ * **Note:** See the [ES5 spec](https://es5.github.io/#x8) for more details.
+ *
+ * @static
+ * @memberOf _
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+ * @example
+ *
+ * _.isObject({});
+ * // => true
+ *
+ * _.isObject([1, 2, 3]);
+ * // => true
+ *
+ * _.isObject(1);
+ * // => false
+ */
+function isObject(value) {
+  // Avoid a V8 JIT bug in Chrome 19-20.
+  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
+  var type = typeof value;
+  return type == 'function' || (value && type == 'object') || false;
+}
+
+module.exports = isIterateeCall;
+
+},{}],44:[function(require,module,exports){
+/**
  * Utility functions
  */
 
@@ -6054,7 +6265,7 @@ EventEmitter.listenerCount = function(emitter, type) {
   return ret;
 };
 
-},{}],42:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 var AsyncBinaryState, Promise,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -6122,7 +6333,7 @@ module.exports = AsyncBinaryState = (function() {
 
 
 
-},{"bluebird":4}],43:[function(require,module,exports){
+},{"bluebird":4}],46:[function(require,module,exports){
 var AsyncBinaryState, Connection, EventEmitter, Promise, TimeoutError, WebSocketFactory, _ref,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __hasProp = {}.hasOwnProperty,
@@ -6267,7 +6478,7 @@ module.exports = Connection = (function(_super) {
 
 
 
-},{"../AsyncBinaryState":42,"./WebSocketFactory":46,"bluebird":4,"node-event-emitter":41}],44:[function(require,module,exports){
+},{"../AsyncBinaryState":45,"./WebSocketFactory":49,"bluebird":4,"node-event-emitter":44}],47:[function(require,module,exports){
 var HandshakeManager;
 
 module.exports = HandshakeManager = (function() {
@@ -6285,8 +6496,8 @@ module.exports = HandshakeManager = (function() {
 
 
 
-},{}],45:[function(require,module,exports){
-var AsyncBinaryState, EventEmitter, HandshakeManager, PersistentConnection, Promise,
+},{}],48:[function(require,module,exports){
+var AsyncBinaryState, EventEmitter, HandshakeManager, PersistentConnection, Promise, random,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
@@ -6294,19 +6505,22 @@ var AsyncBinaryState, EventEmitter, HandshakeManager, PersistentConnection, Prom
 
 AsyncBinaryState = require("../AsyncBinaryState");
 
-Promise = require("bluebird");
-
 EventEmitter = require("node-event-emitter");
 
 HandshakeManager = require("./HandshakeManager");
 
+Promise = require("bluebird");
+
+random = require("lodash.random");
+
 module.exports = PersistentConnection = (function(_super) {
   __extends(PersistentConnection, _super);
 
-  function PersistentConnection(connection, handshakeManager, reconnectWait, reconnectLimit, keepaliveWait) {
+  function PersistentConnection(connection, handshakeManager, reconnectWaitMin, reconnectWaitMax, reconnectLimit, keepaliveWait) {
     this.connection = connection;
     this.handshakeManager = handshakeManager != null ? handshakeManager : new HandshakeManager();
-    this.reconnectWait = reconnectWait != null ? reconnectWait : 3;
+    this.reconnectWaitMin = reconnectWaitMin != null ? reconnectWaitMin : 3;
+    this.reconnectWaitMax = reconnectWaitMax != null ? reconnectWaitMax : 5;
     this.reconnectLimit = reconnectLimit != null ? reconnectLimit : 20;
     this.keepaliveWait = keepaliveWait != null ? keepaliveWait : 30;
     this._message = __bind(this._message, this);
@@ -6412,7 +6626,7 @@ module.exports = PersistentConnection = (function(_super) {
 
   PersistentConnection.prototype._scheduleReconnect = function() {
     var wait;
-    wait = Math.round(this.reconnectWait * 1000);
+    wait = Math.round(random(this.reconnectWaitMin, this.reconnectWaitMax, true) * 1000);
     return this._reconnectTimeout = setTimeout(this._handleReconnect, wait);
   };
 
@@ -6458,7 +6672,7 @@ module.exports = PersistentConnection = (function(_super) {
 
 
 
-},{"../AsyncBinaryState":42,"./HandshakeManager":44,"bluebird":4,"node-event-emitter":41}],46:[function(require,module,exports){
+},{"../AsyncBinaryState":45,"./HandshakeManager":47,"bluebird":4,"lodash.random":41,"node-event-emitter":44}],49:[function(require,module,exports){
 var WebSocketFactory;
 
 module.exports = WebSocketFactory = (function() {
@@ -6476,7 +6690,7 @@ module.exports = WebSocketFactory = (function() {
 
 
 
-},{}],47:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 module.exports = {
   Connection: require('./Connection'),
   HandshakeManager: require('./HandshakeManager'),
@@ -6486,7 +6700,7 @@ module.exports = {
 
 
 
-},{"./Connection":43,"./HandshakeManager":44,"./PersistentConnection":45,"./WebSocketFactory":46}],48:[function(require,module,exports){
+},{"./Connection":46,"./HandshakeManager":47,"./PersistentConnection":48,"./WebSocketFactory":49}],51:[function(require,module,exports){
 module.exports = {
   connection: require('./connection'),
   pubsub: require('./pubsub'),
@@ -6496,7 +6710,7 @@ module.exports = {
 
 
 
-},{"./AsyncBinaryState":42,"./connection":47,"./pubsub":52,"./rpc":60}],49:[function(require,module,exports){
+},{"./AsyncBinaryState":45,"./connection":50,"./pubsub":55,"./rpc":63}],52:[function(require,module,exports){
 var Publisher,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -6520,7 +6734,7 @@ module.exports = Publisher = (function() {
 
 
 
-},{}],50:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 var Subscriber, Subscription,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -6544,7 +6758,7 @@ module.exports = Subscriber = (function() {
 
 
 
-},{"./Subscription":51}],51:[function(require,module,exports){
+},{"./Subscription":54}],54:[function(require,module,exports){
 var AsyncBinaryState, EventEmitter, Promise, Subscription, TimeoutError, regexEscape, _ref,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __hasProp = {}.hasOwnProperty,
@@ -6658,7 +6872,7 @@ module.exports = Subscription = (function(_super) {
 
 
 
-},{"../AsyncBinaryState":42,"bluebird":4,"escape-string-regexp":39,"node-event-emitter":41}],52:[function(require,module,exports){
+},{"../AsyncBinaryState":45,"bluebird":4,"escape-string-regexp":39,"node-event-emitter":44}],55:[function(require,module,exports){
 module.exports = {
   Publisher: require('./Publisher'),
   Subscriber: require('./Subscriber')
@@ -6666,7 +6880,7 @@ module.exports = {
 
 
 
-},{"./Publisher":49,"./Subscriber":50}],53:[function(require,module,exports){
+},{"./Publisher":52,"./Subscriber":53}],56:[function(require,module,exports){
 var InvalidMessageError, Promise, Request, Response, ResponseCode, RpcClient,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __slice = [].slice;
@@ -6761,7 +6975,7 @@ module.exports = RpcClient = (function() {
 
 
 
-},{"./error/InvalidMessageError":56,"./message/Request":61,"./message/Response":62,"./message/ResponseCode":63,"bluebird":4}],54:[function(require,module,exports){
+},{"./error/InvalidMessageError":59,"./message/Request":64,"./message/Response":65,"./message/ResponseCode":66,"bluebird":4}],57:[function(require,module,exports){
 var ExecutionError, ResponseCode,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6782,7 +6996,7 @@ module.exports = ExecutionError = (function(_super) {
 
 
 
-},{"../message/ResponseCode":63}],55:[function(require,module,exports){
+},{"../message/ResponseCode":66}],58:[function(require,module,exports){
 var InvalidArgumentsError, ResponseCode,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6803,7 +7017,7 @@ module.exports = InvalidArgumentsError = (function(_super) {
 
 
 
-},{"../message/ResponseCode":63}],56:[function(require,module,exports){
+},{"../message/ResponseCode":66}],59:[function(require,module,exports){
 var InvalidMessageError, ResponseCode,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6824,7 +7038,7 @@ module.exports = InvalidMessageError = (function(_super) {
 
 
 
-},{"../message/ResponseCode":63}],57:[function(require,module,exports){
+},{"../message/ResponseCode":66}],60:[function(require,module,exports){
 var TimeoutError,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6843,7 +7057,7 @@ module.exports = TimeoutError = (function(_super) {
 
 
 
-},{}],58:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 var ResponseCode, UnknownProcedureError,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -6865,7 +7079,7 @@ module.exports = UnknownProcedureError = (function(_super) {
 
 
 
-},{"../message/ResponseCode":63}],59:[function(require,module,exports){
+},{"../message/ResponseCode":66}],62:[function(require,module,exports){
 module.exports = {
   ExecutionError: require('./ExecutionError'),
   InvalidArgumentsError: require('./InvalidArgumentsError'),
@@ -6876,7 +7090,7 @@ module.exports = {
 
 
 
-},{"./ExecutionError":54,"./InvalidArgumentsError":55,"./InvalidMessageError":56,"./TimeoutError":57,"./UnknownProcedureError":58}],60:[function(require,module,exports){
+},{"./ExecutionError":57,"./InvalidArgumentsError":58,"./InvalidMessageError":59,"./TimeoutError":60,"./UnknownProcedureError":61}],63:[function(require,module,exports){
 module.exports = {
   error: require('./error'),
   message: require('./message'),
@@ -6885,7 +7099,7 @@ module.exports = {
 
 
 
-},{"./RpcClient":53,"./error":59,"./message":64}],61:[function(require,module,exports){
+},{"./RpcClient":56,"./error":62,"./message":67}],64:[function(require,module,exports){
 var Request,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -6906,7 +7120,7 @@ module.exports = Request = (function() {
 
 
 
-},{}],62:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 var ExecutionError, InvalidMessageError, Response, ResponseCode, UnknownProcedureError,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -6951,7 +7165,7 @@ module.exports = Response = (function() {
 
 
 
-},{"../error/ExecutionError":54,"../error/InvalidMessageError":56,"../error/UnknownProcedureError":58,"./ResponseCode":63}],63:[function(require,module,exports){
+},{"../error/ExecutionError":57,"../error/InvalidMessageError":59,"../error/UnknownProcedureError":61,"./ResponseCode":66}],66:[function(require,module,exports){
 var Enum;
 
 Enum = require('enum');
@@ -6966,7 +7180,7 @@ module.exports = new Enum({
 
 
 
-},{"enum":37}],64:[function(require,module,exports){
+},{"enum":37}],67:[function(require,module,exports){
 module.exports = {
   Request: require('./Request'),
   Response: require('./Response'),
@@ -6975,4 +7189,4 @@ module.exports = {
 
 
 
-},{"./Request":61,"./Response":62,"./ResponseCode":63}]},{},[42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,1]);
+},{"./Request":64,"./Response":65,"./ResponseCode":66}]},{},[45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,1]);

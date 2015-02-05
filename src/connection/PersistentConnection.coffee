@@ -1,14 +1,16 @@
 AsyncBinaryState = require "../AsyncBinaryState"
-Promise = require "bluebird"
 EventEmitter = require "node-event-emitter"
 HandshakeManager = require "./HandshakeManager"
+Promise = require "bluebird"
+random = require "lodash.random"
 
 module.exports = class PersistentConnection extends EventEmitter
 
     constructor: (
         @connection
         @handshakeManager = new HandshakeManager()
-        @reconnectWait = 3
+        @reconnectWaitMin = 3
+        @reconnectWaitMax = 5
         @reconnectLimit = 20
         @keepaliveWait = 30
     ) ->
@@ -86,7 +88,8 @@ module.exports = class PersistentConnection extends EventEmitter
         @_scheduleReconnect()
 
     _scheduleReconnect: ->
-        wait = Math.round @reconnectWait * 1000
+        wait = Math.round \
+            random(@reconnectWaitMin, @reconnectWaitMax, true) * 1000
         @_reconnectTimeout = setTimeout @_handleReconnect, wait
 
     _cancelReconnect: ->
