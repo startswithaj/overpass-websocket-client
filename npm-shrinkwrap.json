@@ -3,19 +3,36 @@
   "version": "0.0.0",
   "dependencies": {
     "bluebird": {
-      "version": "2.5.3",
+      "version": "2.9.12",
       "from": "bluebird@>=2.3.11 <3.0.0",
-      "resolved": "https://registry.npmjs.org/bluebird/-/bluebird-2.5.3.tgz"
+      "resolved": "https://registry.npmjs.org/bluebird/-/bluebird-2.9.12.tgz"
     },
     "enum": {
-      "version": "0.2.6",
+      "version": "0.2.7",
       "from": "enum@>=0.2.6 <0.3.0",
-      "resolved": "https://registry.npmjs.org/enum/-/enum-0.2.6.tgz"
+      "resolved": "https://registry.npmjs.org/enum/-/enum-0.2.7.tgz"
     },
     "escape-string-regexp": {
-      "version": "1.0.2",
+      "version": "1.0.3",
       "from": "escape-string-regexp@>=1.0.2 <2.0.0",
-      "resolved": "https://registry.npmjs.org/escape-string-regexp/-/escape-string-regexp-1.0.2.tgz"
+      "resolved": "https://registry.npmjs.org/escape-string-regexp/-/escape-string-regexp-1.0.3.tgz"
+    },
+    "lodash.random": {
+      "version": "3.0.0",
+      "from": "lodash.random@>=3.0.0 <4.0.0",
+      "resolved": "https://registry.npmjs.org/lodash.random/-/lodash.random-3.0.0.tgz",
+      "dependencies": {
+        "lodash._baserandom": {
+          "version": "3.0.0",
+          "from": "lodash._baserandom@>=3.0.0 <4.0.0",
+          "resolved": "https://registry.npmjs.org/lodash._baserandom/-/lodash._baserandom-3.0.0.tgz"
+        },
+        "lodash._isiterateecall": {
+          "version": "3.0.2",
+          "from": "lodash._isiterateecall@>=3.0.0 <4.0.0",
+          "resolved": "https://registry.npmjs.org/lodash._isiterateecall/-/lodash._isiterateecall-3.0.2.tgz"
+        }
+      }
     },
     "node-event-emitter": {
       "version": "0.0.1",
