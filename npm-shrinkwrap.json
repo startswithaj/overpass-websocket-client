@@ -3,14 +3,14 @@
   "version": "0.0.0",
   "dependencies": {
     "bluebird": {
-      "version": "2.9.12",
+      "version": "2.9.30",
       "from": "bluebird@>=2.3.11 <3.0.0",
-      "resolved": "https://registry.npmjs.org/bluebird/-/bluebird-2.9.12.tgz"
+      "resolved": "https://registry.npmjs.org/bluebird/-/bluebird-2.9.30.tgz"
     },
     "enum": {
-      "version": "0.2.7",
-      "from": "enum@>=0.2.6 <0.3.0",
-      "resolved": "https://registry.npmjs.org/enum/-/enum-0.2.7.tgz"
+      "version": "2.1.0",
+      "from": "enum@>=2.0.0 <3.0.0",
+      "resolved": "https://registry.npmjs.org/enum/-/enum-2.1.0.tgz"
     },
     "escape-string-regexp": {
       "version": "1.0.3",
@@ -28,9 +28,9 @@
           "resolved": "https://registry.npmjs.org/lodash._baserandom/-/lodash._baserandom-3.0.0.tgz"
         },
         "lodash._isiterateecall": {
-          "version": "3.0.2",
+          "version": "3.0.9",
           "from": "lodash._isiterateecall@>=3.0.0 <4.0.0",
-          "resolved": "https://registry.npmjs.org/lodash._isiterateecall/-/lodash._isiterateecall-3.0.2.tgz"
+          "resolved": "https://registry.npmjs.org/lodash._isiterateecall/-/lodash._isiterateecall-3.0.9.tgz"
         }
       }
     },
