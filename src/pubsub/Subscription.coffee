@@ -1,7 +1,8 @@
-AsyncBinaryState = require "../AsyncBinaryState"
-EventEmitter = require "node-event-emitter"
 regexEscape = require "escape-string-regexp"
+{EventEmitter} = require "events"
 {Promise, TimeoutError} = require "bluebird"
+
+AsyncBinaryState = require "../AsyncBinaryState"
 
 module.exports = class Subscription extends EventEmitter
 
@@ -9,7 +10,7 @@ module.exports = class Subscription extends EventEmitter
 
         @_state = new AsyncBinaryState()
 
-        atoms = for atom in topic.split "."
+        atoms = for atom in @topic.split "."
             switch atom
                 when "*"
                     "(.+)"

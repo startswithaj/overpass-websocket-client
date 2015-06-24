@@ -1,7 +1,8 @@
-EventEmitter = require "node-event-emitter"
+{EventEmitter} = require "events"
 {Promise, TimeoutError} = require "bluebird"
-WebSocketFactory = require "./WebSocketFactory"
+
 AsyncBinaryState = require "../AsyncBinaryState"
+WebSocketFactory = require "./WebSocketFactory"
 
 module.exports = class Connection extends EventEmitter
 

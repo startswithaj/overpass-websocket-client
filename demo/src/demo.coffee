@@ -8,7 +8,7 @@ $ ->
     input  = $ "#input"
     output = $ "#output"
 
-    connection = new Connection "ws://localhost:8765"
+    connection = new Connection "ws://localhost:8080"
 
     publisher  = new Publisher  connection
     subscriber = new Subscriber connection

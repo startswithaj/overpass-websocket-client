@@ -1,8 +1,9 @@
-AsyncBinaryState = require "../AsyncBinaryState"
-EventEmitter = require "node-event-emitter"
-HandshakeManager = require "./HandshakeManager"
 Promise = require "bluebird"
 random = require "lodash.random"
+{EventEmitter} = require "events"
+
+AsyncBinaryState = require "../AsyncBinaryState"
+HandshakeManager = require "./HandshakeManager"
 
 module.exports = class PersistentConnection extends EventEmitter
 
