@@ -78,9 +78,8 @@ module.exports = class PersistentConnection extends EventEmitter
         clearInterval @_keepaliveInterval
         delete @_keepaliveInterval
 
-        @_state.setOff()
-
-        @emit "disconnect", arguments...
+        @_state.setOff().then =>
+          @emit "disconnect", arguments...
 
     _reconnect: =>
         return if @_reconnectTimeout?
