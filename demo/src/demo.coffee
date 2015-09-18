@@ -8,7 +8,8 @@ $ ->
     input  = $ "#input"
     output = $ "#output"
 
-    connection = new Connection "ws://localhost:8080"
+    url = "ws://#{window.location.hostname}:8080"
+    connection = new Connection url
 
     publisher  = new Publisher  connection
     subscriber = new Subscriber connection
@@ -24,7 +25,11 @@ $ ->
 
     connect = ->
         print "* connecting"
-        connection.connect foo: "bar"
+        connection
+            .connect foo: "bar"
+            .catch (error) ->
+                print "* unable to connect to #{url} (#{error})"
+                reconnect()
 
     reconnect = ->
         print "* reconnecting in 5 seconds"
