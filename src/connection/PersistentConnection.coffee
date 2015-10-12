@@ -42,11 +42,6 @@ module.exports = class PersistentConnection extends EventEmitter
             @connection.once "disconnect", @_disconnect
             @connection.once "disconnect", @_reconnect
 
-            keepalive = => @send type: "connection.heartbeat"
-            wait = Math.round @keepaliveWait * 1000
-
-            @_keepaliveInterval = setInterval keepalive, wait
-
             @handshakeManager.handleResponse response
 
             @emit "connect", response
@@ -54,7 +49,12 @@ module.exports = class PersistentConnection extends EventEmitter
             if @_waitForConnectResolver?
                 @_waitForConnectResolver.resolve response
 
-            response
+            keepalive = => @send type: "connection.heartbeat"
+            wait = Math.round @keepaliveWait * 1000
+
+            @_keepaliveInterval = setInterval keepalive, wait
+
+            return response
         .catch (error) =>
             @connection.removeListener "message", @_message
             @connection.removeListener "disconnect", @_disconnect
